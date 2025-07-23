@@ -16,7 +16,7 @@ spring:
         format_sql: true
 
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
 # --- Swagger / OpenAPI Configuration ---
 springdoc:
   swagger-ui:
@@ -60,7 +60,7 @@ spring:
     activate:
       on-profile: "prod"
   datasource:
-    # These values MUST be set in the Render Environment Variables
+
     url: ${DB_PROD_URL}
     username: ${DB_PROD_USERNAME}
     password: ${DB_PROD_PASSWORD}
