@@ -60,15 +60,19 @@ spring:
     activate:
       on-profile: prod
   datasource:
-    url: jdbc:mysql://mysql-1d18ad22-bunthengseng9-7dfc.f.aivencloud.com:17288/hotelbooking_db_dev?useSSL=true&requireSSL=true&verifyServerCertificate=true&sslMode=REQUIRED
+    url: jdbc:mysql://mysql-1d18ad22-bunthengseng9-7dfc.f.aivencloud.com:17288/defaultdb?useSSL=true&sslMode=REQUIRED
     username: avnadmin
     password: AVNS_XnbWgpJfp01ff59Abur
   jpa:
     hibernate:
       ddl-auto: validate
     show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
 
 logging:
   level:
     root: WARN
     com.hotelbooking: INFO
+
