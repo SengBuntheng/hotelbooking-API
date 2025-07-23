@@ -65,7 +65,7 @@ spring:
     password: AVNS_XnbWgpJfp01ff59Abur
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: false
     properties:
       hibernate:

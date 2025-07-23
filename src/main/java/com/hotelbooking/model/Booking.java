@@ -13,17 +13,12 @@ import java.time.LocalDate;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class Booking extends BaseEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+     @Id
+     @GeneratedValue(strategy = GenerationType.IDENTITY)
+     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "user_id",
-            referencedColumnName = "id",
-            nullable = false
-    )
+    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -42,7 +37,7 @@ public class Booking extends BaseEntity {
     @Column(name = "total_amount", nullable = false)
     private BigDecimal totalAmount;
 
-    @Enumerated(EnumType.ORDINAL)
+    @Enumerated(EnumType.STRING)
     @Column(name = "booking_status", nullable = false)
     private BookingStatus bookingStatus;
 
