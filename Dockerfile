@@ -1,20 +1,22 @@
-# Use an official OpenJDK runtime as a parent image
-FROM openjdk:17-jdk-slim
+# === Stage 1: Build the JAR ===
+FROM maven:3.9.6-eclipse-temurin-17 as build
 
-# Set environment variable
-ENV SPRING_OUTPUT_ANSI_ENABLED=ALWAYS \
-    JAVA_OPTS="" \
-    PORT=8080
+WORKDIR /app
 
-# Expose port
+# Copy only necessary files first for better caching
+COPY pom.xml .
+COPY src ./src
+
+RUN mvn clean package -DskipTests
+
+# === Stage 2: Run the app ===
+FROM eclipse-temurin:17-jdk-jammy
+
+WORKDIR /app
+
+# Copy the JAR file from the build stage
+COPY --from=build /app/target/*.jar app.jar
+
 EXPOSE 8080
 
-# Add a volume pointing to /tmp
-VOLUME /tmp
-
-# Copy the application jar to the container
-ARG JAR_FILE=target/*.jar
-COPY ${JAR_FILE} app.jar
-
-# Run the jar file
-ENTRYPOINT exec java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar /app.jar
+ENTRYPOINT ["java", "-jar", "app.jar"]
