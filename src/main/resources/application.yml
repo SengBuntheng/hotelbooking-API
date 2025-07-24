@@ -42,7 +42,10 @@ app:
   jwt:
     secret: "k2iV7N3pR9sX6vB0tJg8FzW5LmZ1xQe4UkAjNcEyGhTwRyPoDuCvBxMzLsKaQdEr"
     expiration-ms: 86400000
-
+twilio:
+  account_sid: ACbbbf8b23e65804b2f6e5c504e775d52a
+  auth_token: efd1713ab057f2c13517ed7408deec60
+  phone_number: "+15076876214"
 logging:
   level:
 
@@ -51,6 +54,8 @@ logging:
     com.hotelbooking: DEBUG
 
 ---
+
+
 # ===================================================================
 # PRODUCTION PROFILE (prod)
 # Activated when deploying to a live server.
@@ -75,4 +80,5 @@ logging:
   level:
     root: WARN
     com.hotelbooking: INFO
+
 

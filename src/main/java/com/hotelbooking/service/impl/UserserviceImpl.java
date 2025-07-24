@@ -49,41 +49,30 @@ public class UserserviceImpl implements UserService  {
     @Transactional
     @Override
     public UserRespone Create(UserRequest userRequest) {
-
         boolean exists = userRepository.findByEmail(userRequest.getEmail()).isPresent();
         log.debug("Checking if email exists in DB: {} -> {}", userRequest.getEmail(), exists);
         if (exists) {
             throw new GlobalExceptionHandler.DuplicateResourceException("An account with this email already exists.");
         }
-        // Validate userRequest (as you already do)
         userHandlerService.validateUserRequest(userRequest);
-
         User user = new User();
         user.setEmail(userRequest.getEmail());
         user.setPasswordHash(passwordEncoder.encode(userRequest.getPassword()));
         user.setPhone(userRequest.getPhone());
         user.setFirstName(userRequest.getFirstName());
         user.setLastName(userRequest.getLastName());
-
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(new Date());
         user.setCreatedBy("system");
         user.setUpdatedBy("system");
-
         String token = jwtUtils.generateToken(user.getEmail());
         user.setToken(token);
-
         User savedUser = userRepository.save(user);
         log.info("Created user: {}", savedUser.getEmail());
-
         UserRespone response = modelMapper.map(savedUser, UserRespone.class);
         response.setToken(token);
-
         return response;
     }
-
-
-
     @Override
     public UserRespone Update(User user) {
         Optional<User> existingUser = userRepository.findById(user.getId());
@@ -94,7 +83,6 @@ public class UserserviceImpl implements UserService  {
         log.warn("User with ID {} not found for update", user.getId());
         return null;
     }
-
     @Override
     public UserRespone Delete(User user) {
         return null;
