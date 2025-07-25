@@ -64,10 +64,12 @@ spring:
   config:
     activate:
       on-profile: prod
+
   datasource:
     url: jdbc:mysql://mysql-1d18ad22-bunthengseng9-7dfc.f.aivencloud.com:17288/defaultdb?useSSL=true&sslMode=REQUIRED
     username: avnadmin
     password: AVNS_XnbWgpJfp01ff59Abur
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -75,20 +77,20 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
-        mail:
-          host: sandbox.smtp.mailtrap.io
-          port: 2525
-          username: 8783992d414e97
-          password: 8cd02c80c3e8fe
-          properties:
-            mail:
-              smtp:
-                auth: true
-                starttls:
-                  enable: true
+
+  mail:
+    host: sandbox.smtp.mailtrap.io
+    port: 2525
+    username: 8783992d414e97
+    password: 8cd02c80c3e8fe
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 logging:
   level:
     root: WARN
     com.hotelbooking: INFO
-
-
