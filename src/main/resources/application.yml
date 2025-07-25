@@ -85,7 +85,7 @@ spring:
     password: AVNS_XnbWgpJfp01ff59Abur
 
   mail:
-    host: smtp.mailtrap.io
+    host: smtp-relay.brevo.com
     port: 587
     username: ${MAILTRAP_USERNAME:}
     password: ${MAILTRAP_PASSWORD:}
