@@ -38,22 +38,22 @@ spring:
     password:
 
   mail:
-    host: smtp-relay.brevo.com
+    host: smtp.gmail.com
     port: 587
-    username: 930c31001@smtp-brevo.com   # <-- Replace this with Brevo SMTP username
-    password: IWqbN7RHUhKkgBfE   # <-- Replace this with Brevo SMTP password
+    username: userstmp36 # <-- Replace this with Brevo SMTP username
+    password: gwfo uayv dvsm frer
     protocol: smtp
     properties:
       mail:
         smtp:
-          from: buntheng@bakongcity.city
+          from: verify@bakongcity.city
           auth: true
           starttls:
             enable: true
           connectiontimeout: 5000
           timeout: 5000
           writetimeout: 5000
-          ssl.trust: smtp-relay.brevo.com
+          ssl.trust: smtp.gmail.com
         debug: true
 
 app:
@@ -85,7 +85,7 @@ spring:
     password: AVNS_XnbWgpJfp01ff59Abur
 
   mail:
-    host: smtp-relay.brevo.com
+    host: smtp.gmail.com
     port: 587
     username: ${BREVO_SMTP_USERNAME:}
     password: ${BREVO_SMTP_PASSWORD:}
@@ -99,6 +99,7 @@ spring:
           connectiontimeout: 5000
           timeout: 5000
           writetimeout: 5000
+          ssl.trust: smtp.gmail.com
 
   jpa:
     hibernate:
@@ -110,7 +111,7 @@ spring:
 
 app:
   jwt:
-    secret: ${JWT_SECRET:k2iV7N3pR9sX6vB0tJg8FzW5LmZ1xQe4UkAjNcEyGhTwRyPoDuCvBxMzLsKaQdEr}
+    secret: ${k2iV7N3pR9sX6vB0tJg8FzW5LmZ1xQe4UkAjNcEyGhTwRyPoDuCvBxMzLsKaQdEr}
     expiration-ms: 86400000
 
 logging:
