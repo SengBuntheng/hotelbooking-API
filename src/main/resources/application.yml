@@ -75,7 +75,17 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
-
+        mail:
+          host: sandbox.smtp.mailtrap.io
+          port: 2525
+          username: 8783992d414e97
+          password: 8cd02c80c3e8fe
+          properties:
+            mail:
+              smtp:
+                auth: true
+                starttls:
+                  enable: true
 logging:
   level:
     root: WARN
