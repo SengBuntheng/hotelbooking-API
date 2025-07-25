@@ -1,4 +1,3 @@
-
 server:
   port: 8080
   error:
@@ -14,10 +13,9 @@ spring:
     properties:
       hibernate:
         format_sql: true
-
     hibernate:
       ddl-auto: update
-# --- Swagger / OpenAPI Configuration ---
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -25,40 +23,56 @@ springdoc:
     path: /v3/api-docs
 
 ---
+
 # ===================================================================
 # DEVELOPMENT PROFILE (dev)
-# Activated when running locally.
 # ===================================================================
 spring:
   config:
     activate:
-      on-profile: "dev"
+      on-profile: dev
+
   datasource:
     url: jdbc:mysql://localhost:3306/hotelbooking_db_dev?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
-    username: ${DB_DEV_USERNAME:root}
-    password: ${DB_DEV_PASSWORD:}
+    username: root
+    password:
+
+  mail:
+    host: smtp-relay.brevo.com
+    port: 587
+    username: 930c31001@smtp-brevo.com   # <-- Replace this with Brevo SMTP username
+    password: IWqbN7RHUhKkgBfE   # <-- Replace this with Brevo SMTP password
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          from: buntheng@bakongcity.city
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+          ssl.trust: smtp-relay.brevo.com
+        debug: true
 
 app:
   jwt:
     secret: "k2iV7N3pR9sX6vB0tJg8FzW5LmZ1xQe4UkAjNcEyGhTwRyPoDuCvBxMzLsKaQdEr"
     expiration-ms: 86400000
-twilio:
-  account_sid: ACbbbf8b23e65804b2f6e5c504e775d52a
-  auth_token: efd1713ab057f2c13517ed7408deec60
-  phone_number: "+15076876214"
+
 logging:
   level:
-
     org.springframework.web: DEBUG
     org.hibernate.SQL: DEBUG
     com.hotelbooking: DEBUG
+    com.sun.mail: DEBUG
+    jakarta.mail: DEBUG
 
 ---
 
-
 # ===================================================================
 # PRODUCTION PROFILE (prod)
-# Activated when deploying to a live server.
 # ===================================================================
 spring:
   config:
@@ -70,6 +84,22 @@ spring:
     username: avnadmin
     password: AVNS_XnbWgpJfp01ff59Abur
 
+  mail:
+    host: smtp.mailtrap.io
+    port: 587
+    username: ${MAILTRAP_USERNAME:}
+    password: ${MAILTRAP_PASSWORD:}
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -78,17 +108,10 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
 
-  mail:
-    host: sandbox.smtp.mailtrap.io
-    port: 2525
-    username: 8783992d414e97
-    password: 8cd02c80c3e8fe
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
+app:
+  jwt:
+    secret: ${JWT_SECRET:k2iV7N3pR9sX6vB0tJg8FzW5LmZ1xQe4UkAjNcEyGhTwRyPoDuCvBxMzLsKaQdEr}
+    expiration-ms: 86400000
 
 logging:
   level:

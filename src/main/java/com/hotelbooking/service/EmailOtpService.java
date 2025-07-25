@@ -1,39 +1,68 @@
 package com.hotelbooking.service;
 
-
-import com.hotelbooking.service.OtpStorageService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.SimpleMailMessage;
+import com.hotelbooking.Config.EmailTemplateService;
+import com.hotelbooking.Enum.VerificationResult;
+import com.hotelbooking.dto.OtpDetails;
+import jakarta.mail.internet.MimeMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 import java.util.Random;
 
 @Service
 public class EmailOtpService {
 
-    @Autowired
-    private JavaMailSender mailSender;
+    private final JavaMailSender mailSender;
+    private final EmailTemplateService templateService;
+    private final OtpStorageService storageService;
 
-    @Autowired
-    private OtpStorageService otpStorageService;
-
-    public EmailOtpService(JavaMailSender mailSender) {
+    public EmailOtpService(JavaMailSender mailSender,
+                           EmailTemplateService templateService,
+                           OtpStorageService storageService) {
         this.mailSender = mailSender;
+        this.templateService = templateService;
+        this.storageService = storageService;
     }
 
-    public void sendOtp(String email) {
+    public void sendOtp(String email) throws Exception {
         String otp = generateOtp();
-        otpStorageService.storeOtp(email, otp);
+        String htmlContent = templateService.buildVerificationEmail(otp);
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(email);
-        message.setSubject("Your OTP Code");
-        message.setText("Your OTP is: " + otp + "\nIt is valid for 5 minutes.");
+        // Store OTP
+        storageService.storeOtp(email, otp);
+
+        // Send Email
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true);
+        helper.setTo(email);
+        helper.setSubject("Your Verification Code");
+        helper.setText(htmlContent, true); // true = HTML
         mailSender.send(message);
     }
 
     private String generateOtp() {
-        Random random = new Random();
-        return String.format("%06d", random.nextInt(1000000)); // 6-digit OTP
+        return String.format("%06d", new Random().nextInt(999999));
+    }
+
+    public VerificationResult verifyOtp(String email, String otp) {
+        OtpDetails otpDetails = storageService.getOtpDetails(email);
+
+        if (otpDetails == null) {
+            return VerificationResult.notFound();
+        }
+
+        if (otpDetails.getExpirationTime().isBefore(LocalDateTime.now())) {
+            storageService.removeOtp(email);
+            return VerificationResult.expired();
+        }
+
+        if (!otpDetails.getOtp().equals(otp)) {
+            return VerificationResult.invalid();
+        }
+
+        storageService.removeOtp(email);
+        return VerificationResult.valid();
     }
 }

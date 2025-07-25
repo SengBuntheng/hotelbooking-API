@@ -1,12 +1,12 @@
 package com.hotelbooking.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.*;
 
 import java.time.LocalDateTime;
-
-@Data
 @AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
 public class OtpDetails {
     private String email;
     private String otp;
