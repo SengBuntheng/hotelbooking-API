@@ -11,7 +11,6 @@ import java.nio.charset.StandardCharsets;
 public class EmailTemplateService {
 
     public String buildVerificationEmail(String otpCode) throws IOException {
-        // Load HTML template from resources
         ClassPathResource resource = new ClassPathResource("templates/email-verification.html");
         String template = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
 

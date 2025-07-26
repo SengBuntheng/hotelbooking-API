@@ -40,7 +40,7 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: userstmp36 # <-- Replace this with Brevo SMTP username
+    username: userstmp36
     password: gwfo uayv dvsm frer
     protocol: smtp
     properties:
@@ -60,6 +60,17 @@ app:
   jwt:
     secret: "k2iV7N3pR9sX6vB0tJg8FzW5LmZ1xQe4UkAjNcEyGhTwRyPoDuCvBxMzLsKaQdEr"
     expiration-ms: 86400000
+  otp:
+    expiration:
+      minutes: 5
+    max:
+      attempts: 3
+    cleanup:
+      interval:
+        ms: 60000
+    resend:
+      timeout:
+        minutes: 1
 
 logging:
   level:
@@ -111,8 +122,19 @@ spring:
 
 app:
   jwt:
-    secret: ${k2iV7N3pR9sX6vB0tJg8FzW5LmZ1xQe4UkAjNcEyGhTwRyPoDuCvBxMzLsKaQdEr}
+    secret: ${JWT_SECRET:k2iV7N3pR9sX6vB0tJg8FzW5LmZ1xQe4UkAjNcEyGhTwRyPoDuCvBxMzLsKaQdEr}
     expiration-ms: 86400000
+  otp:
+    expiration:
+      minutes: 5
+    max:
+      attempts: 3
+    cleanup:
+      interval:
+        ms: 60000
+    resend:
+      timeout:
+        minutes: 1
 
 logging:
   level:

@@ -54,8 +54,10 @@ public class UserserviceImpl implements UserService  {
         if (exists) {
             throw new GlobalExceptionHandler.DuplicateResourceException("An account with this email already exists.");
         }
+
         userHandlerService.validateUserRequest(userRequest);
         User user = new User();
+        user.setActive(false);
         user.setEmail(userRequest.getEmail());
         user.setPasswordHash(passwordEncoder.encode(userRequest.getPassword()));
         user.setPhone(userRequest.getPhone());
@@ -100,6 +102,20 @@ public class UserserviceImpl implements UserService  {
                 .map(user -> modelMapper.map(user, UserRespone.class))
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public boolean userExists(String email) {
+        return false;
+    }
+
+    @Override
+    public void activateUser(String email) {
+        userRepository.findByEmail(email).ifPresent(user -> {
+            user.setActive(true);
+            userRepository.save(user);
+        });
+    }
+
     public User findbyemail(String em) {
         return null;
     }

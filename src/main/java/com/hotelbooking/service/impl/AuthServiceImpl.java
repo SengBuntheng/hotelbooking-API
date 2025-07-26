@@ -4,6 +4,7 @@ import com.hotelbooking.Config.JwtUtils;
 import com.hotelbooking.Repository.UserRepository;
 import com.hotelbooking.dto.LoginRequest;
 import com.hotelbooking.dto.LoginResponse;
+import com.hotelbooking.model.User;
 import com.hotelbooking.service.AuthService;
 import com.hotelbooking.service.handler.AuthHandlerService;
 import jakarta.validation.constraints.Email;
@@ -39,35 +40,31 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponse login(LoginRequest loginRequest) {
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            loginRequest.getEmail(),
-                            loginRequest.getPassword()
-                    )
-            );
+        User user = userRepository.findByEmail(loginRequest.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            // Generate JWT token
-            String token = jwtUtils.generateToken(loginRequest.getEmail());
-
-            // Retrieve user from DB
-            var user = userRepository.findByEmail(loginRequest.getEmail())
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-
-            // Build response
-            LoginResponse response = new LoginResponse();
-            response.setToken(token);
-            response.setUser(mapToUserResponse(user));
-            return response;
-
-        } catch (Exception e) {
-            log.error("Authentication failed for user: {}", loginRequest.getEmail(), e);
-            throw new RuntimeException("Authentication failed: " + e.getMessage());
+        if (!user.isActive()) {
+            return new LoginResponse(false, "Account not activated. Please verify your email.", null);
         }
+
+        if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPasswordHash())) {
+            return new LoginResponse(false, "Invalid credentials", null);
+        }
+
+        String token = jwtUtils.generateToken(user.getEmail());
+        return new LoginResponse(true, "Login successful", token);
     }
 
+    @Override
+    public LoginResponse loginWithOtp(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!user.isActive()) {
+            return new LoginResponse(false, "Account not activated. Please verify your email.", null);
+        }
+
+        String token = jwtUtils.generateToken(user.getEmail());
+        return new LoginResponse(true, "Login successful", token);
+    }
 }
-
-

@@ -1,11 +1,9 @@
 package com.hotelbooking.Controller;
 
 import com.hotelbooking.Enum.VerificationResult;
-import com.hotelbooking.dto.ApiResponse;
-import com.hotelbooking.dto.OtpVerificationRequest;
+import com.hotelbooking.dto.*;
 import com.hotelbooking.service.EmailOtpService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import org.springframework.http.ResponseEntity;
@@ -52,6 +50,4 @@ public class OtpController {
                     new ApiResponse(false, "Verification failed: " + e.getMessage()));
         }
     }
-
-
 }

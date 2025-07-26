@@ -11,10 +11,12 @@ import java.util.Locale;
 @Getter
 @AllArgsConstructor
 @Setter
+@NoArgsConstructor
 public class UserRequest {
     private String firstName;
     private String lastName;
     private String email;
     private String phone;
     private String password;
+    private String otp;
 }

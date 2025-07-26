@@ -16,5 +16,6 @@ public interface UserService {
     UserRespone Delete (User user);
     UserRespone findbyid (Long id);
     List<UserRespone> findAll();
-
+    boolean userExists(String email);
+    void activateUser(String email);
 }
