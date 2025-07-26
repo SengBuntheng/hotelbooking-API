@@ -1,94 +1,125 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Email Verification</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f6f8;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             color: #333;
+        }
+
+        .email-wrapper {
             max-width: 600px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 40px 20px;
         }
-        .container {
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 30px;
+
+        .email-content {
             background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            padding: 40px 30px;
         }
-        .header {
+
+        .email-header {
             text-align: center;
-            margin-bottom: 25px;
+            margin-bottom: 30px;
         }
-        .logo {
-            max-width: 150px;
-            margin-bottom: 20px;
+
+        .email-logo {
+            max-width: 120px;
+            margin-bottom: 10px;
         }
-        .code-container {
-            background-color: #f8f9fa;
-            padding: 20px;
-            border-radius: 6px;
-            text-align: center;
-            margin: 25px 0;
-        }
-        .verification-code {
-            font-size: 32px;
-            letter-spacing: 5px;
+
+        h1 {
+            font-size: 20px;
             color: #2c3e50;
-            font-weight: bold;
-            margin: 15px 0;
+            margin: 0;
         }
+
+        p {
+            font-size: 16px;
+            line-height: 1.6;
+            margin: 16px 0;
+        }
+
+        .otp-box {
+            background-color: #f1f3f5;
+            border: 1px dashed #d1d5db;
+            border-radius: 6px;
+            padding: 20px;
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .otp-code {
+            font-size: 28px;
+            letter-spacing: 6px;
+            font-weight: bold;
+            color: #1a202c;
+        }
+
+        .expiry-text {
+            font-size: 14px;
+            color: #e63946;
+            margin-top: 10px;
+        }
+
         .footer {
             text-align: center;
-            margin-top: 30px;
-            color: #7f8c8d;
             font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 30px;
         }
-        .button {
-            display: inline-block;
-            padding: 12px 24px;
-            background-color: #3498db;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-            font-weight: bold;
-            margin-top: 15px;
+
+        .footer p {
+            margin: 4px 0;
         }
-        .expiry-note {
-            color: #e74c3c;
-            font-size: 14px;
-            margin-top: 10px;
+
+        @media (max-width: 600px) {
+            .email-content {
+                padding: 30px 20px;
+            }
+
+            .otp-code {
+                font-size: 24px;
+                letter-spacing: 4px;
+            }
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="header">
-        <!-- Replace with your logo -->
-        <img src="https://www.bing.com/images/search?view=detailV2&ccid=ftNYPpjo&id=7C900A5615B2BBFE84730631E3C676CABD6F5FCE&thid=OIP.ftNYPpjo8pIwaM7D4XQWlwHaCI&mediaurl=https%3a%2f%2flookaside.fbsbx.com%2flookaside%2fcrawler%2fmedia%2f%3fmedia_id%3d573565636027055&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.7ed3583e98e8f2923068cec3e1741697%3frik%3dzl9vvcp2xuMxBg%26pid%3dImgRaw%26r%3d0&exph=591&expw=2057&q=Institute+Setec+Logo+Without+Background&FORM=IRPRST&ck=A6ADDE51D64062B468B86A19E8195F06&selectedIndex=5&itb=0" alt="Company Logo" class="logo">
-        <h2>Verify Your Email Address</h2>
+<div class="email-wrapper">
+    <div class="email-content">
+        <div class="email-header">
+            <!-- Replace src with actual logo URL -->
+            <img src="OIP.webp" alt="Bakong City Logo" class="email-logo" />
+            <h1>Email Verification</h1>
+        </div>
+
+        <p>Hello,</p>
+
+        <p>Thank you for signing up with <strong>Bakong City</strong>. To complete your registration, please use the verification code below:</p>
+
+        <div class="otp-box">
+            <div class="otp-code">{{OTP_CODE}}</div>
+            <p>Enter this code in the app to verify your email.</p>
+            <p class="expiry-text">This code expires in 5 minutes.</p>
+        </div>
+
+        <p>If you did not request this code, you can safely ignore this email.</p>
+
+        <p>Regards,<br />The Bakong City Team</p>
     </div>
-
-    <p>Hello,</p>
-
-    <p>Thank you for registering with us. Please use the following verification code to complete your registration:</p>
-
-    <div class="code-container">
-        <div class="verification-code">{{OTP_CODE}}</div>
-        <p>Enter this code in your application to verify your email address.</p>
-        <p class="expiry-note">This code will expire in 5 minutes.</p>
-    </div>
-
-    <p>If you didn't request this code, you can safely ignore this email.</p>
-
-    <p>Best regards,<br>The Bakong City Team</p>
 
     <div class="footer">
         <p>© 2025 Bakong City. All rights reserved.</p>
-        <p>Address: 123 Main Street, Bakong City</p>
+        <p>123 Main Street, Bakong City</p>
     </div>
 </div>
 </body>
