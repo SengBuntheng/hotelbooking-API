@@ -2,19 +2,19 @@
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
-    <!-- Telegram Appender (Production Only) -->
+    <!-- Telegram Appender -->
     <springProperty name="TELEGRAM_BOT_TOKEN" source="telegram.alert.bot-token"/>
     <springProperty name="TELEGRAM_CHAT_ID" source="telegram.alert.chat-id"/>
 
     <appender name="TELEGRAM" class="com.hotelbooking.Config.TelegramAppender">
         <token>${TELEGRAM_BOT_TOKEN}</token>
         <chatId>${TELEGRAM_CHAT_ID}</chatId>
+        <includeStacktrace>true</includeStacktrace>
+        <rateLimit>5</rateLimit>
+        <environment>prod</environment>
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>ERROR</level>
         </filter>
-        <layout class="ch.qos.logback.classic.PatternLayout">
-            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
-        </layout>
     </appender>
 
     <root level="WARN">

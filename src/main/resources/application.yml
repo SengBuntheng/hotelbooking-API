@@ -149,7 +149,6 @@ telegram:
       - "Exception"
 
 logging:
-  config: classpath:logback-spring-prod.xml
   level:
     root: WARN
     com.hotelbooking: INFO
