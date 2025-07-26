@@ -8,6 +8,7 @@ spring:
     name: hotel-booking-api
   profiles:
     active: dev
+
   jpa:
     show-sql: true
     properties:
@@ -22,11 +23,32 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 
+app:
+  jwt:
+    secret: "k2iV7N3pR9sX6vB0tJg8FzW5LmZ1xQe4UkAjNcEyGhTwRyPoDuCvBxMzLsKaQdEr"
+    expiration-ms: 86400000
+  otp:
+    expiration:
+      minutes: 5
+    max:
+      attempts: 3
+    cleanup:
+      interval:
+        ms: 60000
+    resend:
+      timeout:
+        minutes: 1
+
+logging:
+  level:
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    com.hotelbooking: DEBUG
+    com.sun.mail: DEBUG
+    jakarta.mail: DEBUG
+
 ---
 
-# ===================================================================
-# DEVELOPMENT PROFILE (dev)
-# ===================================================================
 spring:
   config:
     activate:
@@ -56,35 +78,8 @@ spring:
           ssl.trust: smtp.gmail.com
         debug: true
 
-app:
-  jwt:
-    secret: "k2iV7N3pR9sX6vB0tJg8FzW5LmZ1xQe4UkAjNcEyGhTwRyPoDuCvBxMzLsKaQdEr"
-    expiration-ms: 86400000
-  otp:
-    expiration:
-      minutes: 5
-    max:
-      attempts: 3
-    cleanup:
-      interval:
-        ms: 60000
-    resend:
-      timeout:
-        minutes: 1
-
-logging:
-  level:
-    org.springframework.web: DEBUG
-    org.hibernate.SQL: DEBUG
-    com.hotelbooking: DEBUG
-    com.sun.mail: DEBUG
-    jakarta.mail: DEBUG
-
 ---
 
-# ===================================================================
-# PRODUCTION PROFILE (prod)
-# ===================================================================
 spring:
   config:
     activate:
@@ -120,38 +115,19 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
 
-app:
-  jwt:
-    secret: ${JWT_SECRET:k2iV7N3pR9sX6vB0tJg8FzW5LmZ1xQe4UkAjNcEyGhTwRyPoDuCvBxMzLsKaQdEr}
-    expiration-ms: 86400000
-  otp:
-    expiration:
-      minutes: 5
-    max:
-      attempts: 3
-    cleanup:
-      interval:
-        ms: 60000
-    resend:
-      timeout:
-        minutes: 1
-
-telegram:
-  alert:
-    enabled: true
-    bot-token: ${TELEGRAM_BOT_TOKEN:}
-    chat-id: ${TELEGRAM_CHAT_ID:}
-    rate-limit: 5
-    include-stacktrace: true
-    notify-on:
-      - "ERROR"
-      - "WARN"
-      - "Exception"
-
 logging:
+  config: classpath:logback-spring-prod.xml
   level:
     root: WARN
     com.hotelbooking: INFO
     org.springframework.web: WARN
     org.hibernate: WARN
     com.zaxxer.hikari: WARN
+
+telegram:
+  alert:
+    enabled: true
+    bot-token: ${TELEGRAM_BOT_TOKEN}
+    chat-id: ${TELEGRAM_CHAT_ID}
+    rate-limit: 5
+    include-stacktrace: true

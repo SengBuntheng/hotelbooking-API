@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <include resource="org/springframework/boot/logging/logback/defaults.xml" />
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
     <springProperty name="TELEGRAM_BOT_TOKEN" source="telegram.alert.bot-token"/>
     <springProperty name="TELEGRAM_CHAT_ID" source="telegram.alert.chat-id"/>
 
-    <appender name="TELEGRAM" class="com.hotelbooking.Config.TelegramAppender">
+    <appender name="TELEGRAM" class="com.hotelbooking.config.TelegramAppender">
         <token>${TELEGRAM_BOT_TOKEN}</token>
         <chatId>${TELEGRAM_CHAT_ID}</chatId>
         <environment>${ENVIRONMENT:prod}</environment>
@@ -13,7 +13,7 @@
         <rateLimit>10</rateLimit>
     </appender>
 
-    <root level="INFO">
+    <root level="ERROR">
         <appender-ref ref="TELEGRAM"/>
     </root>
 </configuration>
