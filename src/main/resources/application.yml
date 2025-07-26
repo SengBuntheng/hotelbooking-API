@@ -79,6 +79,87 @@ spring:
         debug: true
 
 ---
+server:
+  port: 8080
+  error:
+    include-message: always
+
+spring:
+  application:
+    name: hotel-booking-api
+  profiles:
+    active: dev
+
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    hibernate:
+      ddl-auto: update
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+app:
+  jwt:
+    secret: "k2iV7N3pR9sX6vB0tJg8FzW5LmZ1xQe4UkAjNcEyGhTwRyPoDuCvBxMzLsKaQdEr"
+    expiration-ms: 86400000
+  otp:
+    expiration:
+      minutes: 5
+    max:
+      attempts: 3
+    cleanup:
+      interval:
+        ms: 60000
+    resend:
+      timeout:
+        minutes: 1
+
+logging:
+  level:
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    com.hotelbooking: DEBUG
+    com.sun.mail: DEBUG
+    jakarta.mail: DEBUG
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/hotelbooking_db_dev?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: root
+    password:
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: userstmp36
+    password: gwfo uayv dvsm frer
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          from: verify@bakongcity.city
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+          ssl.trust: smtp.gmail.com
+        debug: true
+
+---
 
 spring:
   config:
