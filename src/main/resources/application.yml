@@ -136,7 +136,23 @@ app:
       timeout:
         minutes: 1
 
+telegram:
+  alert:
+    enabled: true
+    bot-token: ${TELEGRAM_BOT_TOKEN:}
+    chat-id: ${TELEGRAM_CHAT_ID:}
+    rate-limit: 5
+    include-stacktrace: true
+    notify-on:
+      - "ERROR"
+      - "WARN"
+      - "Exception"
+
 logging:
+  config: classpath:logback-spring-prod.xml
   level:
     root: WARN
     com.hotelbooking: INFO
+    org.springframework.web: WARN
+    org.hibernate: WARN
+    com.zaxxer.hikari: WARN

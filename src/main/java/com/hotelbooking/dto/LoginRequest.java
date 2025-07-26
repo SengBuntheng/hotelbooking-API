@@ -3,6 +3,8 @@ package com.hotelbooking.dto;
 
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @AllArgsConstructor
 @Data
 @ToString
@@ -12,6 +14,7 @@ import lombok.*;
 public class LoginRequest {
     private String email;
     private String password;
+    private String otp;
 
 
 }

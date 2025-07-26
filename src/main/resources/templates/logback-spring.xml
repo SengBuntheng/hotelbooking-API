@@ -1,0 +1,41 @@
+<configuration>
+    <!-- Common properties -->
+    <property name="TELEGRAM_DEV_FORMAT" value="⚠️ [DEV] %level %logger{15} - %msg%n%ex{3}"/>
+    <property name="TELEGRAM_PROD_FORMAT" value="🚨 [PROD] %level - %msg%nPath: %X{requestURI}%nTraceID: %X{traceId}"/>
+
+    <!-- Development Profile -->
+    <springProfile name="dev">
+        <appender name="TELEGRAM" class="com.hotelbooking.Config.TelegramAppender">
+            <token>${telegram.alert.bot-token}</token>
+            <chatId>${telegram.alert.chat-id}</chatId>
+            <environment>dev</environment>
+            <includeStacktrace>true</includeStacktrace>
+            <rateLimit>5</rateLimit>
+            <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                <level>WARN</level>
+            </filter>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="TELEGRAM"/>
+        </root>
+    </springProfile>
+
+    <!-- Production Profile -->
+    <springProfile name="prod">
+        <appender name="TELEGRAM" class="com.hotelbooking.Config.TelegramAppender">
+            <token>${telegram.alert.bot-token}</token>
+            <chatId>${telegram.alert.chat-id}</chatId>
+            <environment>prod</environment>
+            <includeStacktrace>false</includeStacktrace>
+            <rateLimit>3</rateLimit>
+            <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                <level>ERROR</level>
+            </filter>
+        </appender>
+
+        <root level="WARN">
+            <appender-ref ref="TELEGRAM"/>
+        </root>
+    </springProfile>
+</configuration>
