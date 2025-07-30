@@ -1,45 +1,61 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
+    <!-- Include Spring Boot's default logging configurations -->
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
-    <springProperty scope="context" name="APP_NAME" source="spring.application.name"/>
-    <springProperty name="TELEGRAM_BOT_TOKEN" source="telegram.alert.bot-token"/>
-    <springProperty name="TELEGRAM_CHAT_ID" source="telegram.alert.chat-id"/>
-    <springProperty name="ENVIRONMENT" source="spring.profiles.active" defaultValue="dev"/>
 
+    <!-- Console Appender for standard server logs -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            <charset>utf8</charset>
+        </encoder>
+    </appender>
+
+    <!-- ====================================================== -->
+    <!-- TELEGRAM Appender Configuration -->
+    <!-- ====================================================== -->
     <appender name="TELEGRAM" class="com.hotelbooking.Config.TelegramAppender">
+        <!--
+            IMPORTANT: Use environment variables for your secrets.
+            Do NOT hardcode your token and chat ID here.
+        -->
         <token>${TELEGRAM_BOT_TOKEN}</token>
         <chatId>${TELEGRAM_CHAT_ID}</chatId>
-        <environment>${ENVIRONMENT}</environment>
-        <includeStacktrace>true</includeStacktrace>
-        <rateLimit>5</rateLimit>
+        <environment>prod</environment> <!-- Or any environment name you prefer -->
+
+        <!-- Filter: Only send WARN and ERROR level logs to Telegram -->
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>ERROR</level>
-        </filter>
-        <!-- Additional filter to exclude noisy exceptions -->
-        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
-            <evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
-                <marker>NO_TELEGRAM</marker>
-            </evaluator>
-            <onMatch>DENY</onMatch>
+            <level>WARN</level>
         </filter>
     </appender>
 
-    <!-- Async appender to prevent blocking -->
+    <!--
+        Asynchronous Appender: This is a best practice.
+        It prevents your application from slowing down while waiting for Telegram to respond.
+    -->
     <appender name="ASYNC_TELEGRAM" class="ch.qos.logback.classic.AsyncAppender">
         <appender-ref ref="TELEGRAM"/>
-        <queueSize>100</queueSize>
+        <queueSize>256</queueSize>
         <discardingThreshold>0</discardingThreshold>
-        <includeCallerData>true</includeCallerData>
+        <neverBlock>true</neverBlock>
     </appender>
 
+
+    <!--
+        Root Logger Configuration:
+        This tells Spring which appenders to use for which environment.
+    -->
     <root level="INFO">
-        <appender-ref ref="ASYNC_TELEGRAM"/>
+        <appender-ref ref="CONSOLE"/>
     </root>
 
-    <!-- Special logger for specific packages -->
-    <logger name="com.hotelbooking" level="DEBUG" additivity="false">
-        <appender-ref ref="ASYNC_TELEGRAM"/>
-    </logger>
+    <!-- Production Profile: Add the Telegram appender ONLY when 'prod' is active -->
+    <springProfile name="prod">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="ASYNC_TELEGRAM"/> <!-- Use the async appender -->
+        </root>
+    </springProfile>
 
 </configuration>

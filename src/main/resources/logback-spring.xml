@@ -1,19 +1,61 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <include resource="org/springframework/boot/logging/logback/defaults.xml" />
 
-    <springProperty name="TELEGRAM_BOT_TOKEN" source="telegram.alert.bot-token"/>
-    <springProperty name="TELEGRAM_CHAT_ID" source="telegram.alert.chat-id"/>
+    <!-- Include Spring Boot's default logging configurations -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
-    <appender name="TELEGRAM" class="com.hotelbooking.Config.TelegramAppender">
-        <token>${TELEGRAM_BOT_TOKEN}</token>
-        <chatId>${TELEGRAM_CHAT_ID}</chatId>
-        <environment>${ENVIRONMENT:prod}</environment>
-        <includeStacktrace>true</includeStacktrace>
-        <rateLimit>10</rateLimit>
+    <!-- Console Appender for standard server logs -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            <charset>utf8</charset>
+        </encoder>
     </appender>
 
-    <root level="INFO">
+    <!-- ====================================================== -->
+    <!-- TELEGRAM Appender Configuration -->
+    <!-- ====================================================== -->
+    <appender name="TELEGRAM" class="com.hotelbooking.Config.TelegramAppender">
+        <!--
+            IMPORTANT: Use environment variables for your secrets.
+            Do NOT hardcode your token and chat ID here.
+        -->
+        <token>${TELEGRAM_BOT_TOKEN}</token>
+        <chatId>${TELEGRAM_CHAT_ID}</chatId>
+        <environment>prod</environment> <!-- Or any environment name you prefer -->
+
+        <!-- Filter: Only send WARN and ERROR level logs to Telegram -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+    </appender>
+
+    <!--
+        Asynchronous Appender: This is a best practice.
+        It prevents your application from slowing down while waiting for Telegram to respond.
+    -->
+    <appender name="ASYNC_TELEGRAM" class="ch.qos.logback.classic.AsyncAppender">
         <appender-ref ref="TELEGRAM"/>
+        <queueSize>256</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+    </appender>
+
+
+    <!--
+        Root Logger Configuration:
+        This tells Spring which appenders to use for which environment.
+    -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
     </root>
+
+    <!-- Production Profile: Add the Telegram appender ONLY when 'prod' is active -->
+    <springProfile name="prod">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="ASYNC_TELEGRAM"/> <!-- Use the async appender -->
+        </root>
+    </springProfile>
+
 </configuration>
