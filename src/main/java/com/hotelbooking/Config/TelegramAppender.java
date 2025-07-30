@@ -14,7 +14,8 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 @Getter
 @Setter
 public class TelegramAppender extends AppenderBase<ILoggingEvent> {
@@ -27,9 +28,10 @@ public class TelegramAppender extends AppenderBase<ILoggingEvent> {
     private final RestTemplate restTemplate = new RestTemplate();
     private final AtomicInteger messageCount = new AtomicInteger(0);
     private long lastResetTime = System.currentTimeMillis();
+    private static final Marker NO_TELEGRAM = MarkerFactory.getMarker("NO_TELEGRAM");
 
     private static final DateTimeFormatter TIME_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z")
+            DateTimeFormatter.ofPattern("HH:mm:ss")
                     .withZone(ZoneId.systemDefault());
 
     @Override
@@ -50,31 +52,57 @@ public class TelegramAppender extends AppenderBase<ILoggingEvent> {
             addError("Failed to send log to Telegram", e);
         }
     }
-
+    private String getAppName() {
+        try {
+            return System.getProperty("spring.application.name", "hotel-booking");
+        } catch (Exception e) {
+            return "unknown-app";
+        }
+    }
     private String formatMessage(ILoggingEvent event) {
         StringBuilder sb = new StringBuilder();
 
-        sb.append(getEnvironmentEmoji())
-                .append(" *").append(environment.toUpperCase()).append(" ")
-                .append(event.getLevel()).append("*\n");
+        // Header with animated emoji
+        sb.append(getErrorHeader(event.getLevel().levelStr))
+                .append("\n\n");
 
-        sb.append("🕒 ").append(TIME_FORMATTER.format(Instant.ofEpochMilli(event.getTimeStamp()))).append("\n");
-        sb.append("📡 Server: ").append(getHostName()).append("\n");
-        sb.append("📝 ").append(event.getFormattedMessage()).append("\n");
-
+        // Main error content
+        sb.append("? *Time:* ").append(TIME_FORMATTER.format(Instant.ofEpochMilli(event.getTimeStamp()))).append("\n");
+        sb.append("??? *Server:* ").append(getHostName()).append("\n\n");
+        sb.append("?? *Message:*\n").append("```\n").append(event.getFormattedMessage()).append("\n```\n\n");
+        sb.append("?? *App:* ").append(getAppName()).append("\n");
+        // Stacktrace if enabled
         if (includeStacktrace && event.getThrowableProxy() != null) {
-            sb.append("\n```\n")
+            sb.append("?? *Stacktrace:*\n```\n")
                     .append(event.getThrowableProxy().getClassName()).append(": ")
                     .append(event.getThrowableProxy().getMessage()).append("\n")
-                    .append(event.getThrowableProxy().getStackTraceElementProxyArray()[0])
+                    .append(getFirstStackTraceLine(event))
                     .append("\n```");
         }
 
         return sb.toString();
     }
 
-    private String getEnvironmentEmoji() {
-        return "prod".equalsIgnoreCase(environment) ? "🚨" : "⚠️";
+    private String getErrorHeader(String level) {
+        String emojiAnimation = switch (level.toLowerCase()) {
+            case "error" -> "??????";
+            case "warn" -> "????";
+            default -> "??";
+        };
+
+        return String.format("%s *%s %s ERROR* %s",
+                emojiAnimation,
+                environment.toUpperCase(),
+                level.toUpperCase(),
+                emojiAnimation);
+    }
+
+    private String getFirstStackTraceLine(ILoggingEvent event) {
+        if (event.getThrowableProxy().getStackTraceElementProxyArray() == null ||
+                event.getThrowableProxy().getStackTraceElementProxyArray().length == 0) {
+            return "No stacktrace available";
+        }
+        return event.getThrowableProxy().getStackTraceElementProxyArray()[0].toString();
     }
 
     private boolean isRateLimitExceeded() {
@@ -88,9 +116,9 @@ public class TelegramAppender extends AppenderBase<ILoggingEvent> {
 
     private String getHostName() {
         try {
-            return InetAddress.getLocalHost().getHostName();
+            return InetAddress.getLocalHost().getHostName().split("\\.")[0];
         } catch (Exception e) {
-            return "unknown";
+            return "unknown-host";
         }
     }
 }

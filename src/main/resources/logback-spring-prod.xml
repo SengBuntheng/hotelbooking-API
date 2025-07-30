@@ -2,22 +2,44 @@
 <configuration>
 
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <springProperty scope="context" name="APP_NAME" source="spring.application.name"/>
     <springProperty name="TELEGRAM_BOT_TOKEN" source="telegram.alert.bot-token"/>
     <springProperty name="TELEGRAM_CHAT_ID" source="telegram.alert.chat-id"/>
+    <springProperty name="ENVIRONMENT" source="spring.profiles.active" defaultValue="dev"/>
 
     <appender name="TELEGRAM" class="com.hotelbooking.Config.TelegramAppender">
         <token>${TELEGRAM_BOT_TOKEN}</token>
         <chatId>${TELEGRAM_CHAT_ID}</chatId>
+        <environment>${ENVIRONMENT}</environment>
         <includeStacktrace>true</includeStacktrace>
         <rateLimit>5</rateLimit>
-        <environment>prod</environment>
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>ERROR</level>
         </filter>
+        <!-- Additional filter to exclude noisy exceptions -->
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
+                <marker>NO_TELEGRAM</marker>
+            </evaluator>
+            <onMatch>DENY</onMatch>
+        </filter>
     </appender>
 
-    <root level="WARN">
+    <!-- Async appender to prevent blocking -->
+    <appender name="ASYNC_TELEGRAM" class="ch.qos.logback.classic.AsyncAppender">
         <appender-ref ref="TELEGRAM"/>
+        <queueSize>100</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>true</includeCallerData>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="ASYNC_TELEGRAM"/>
     </root>
+
+    <!-- Special logger for specific packages -->
+    <logger name="com.hotelbooking" level="DEBUG" additivity="false">
+        <appender-ref ref="ASYNC_TELEGRAM"/>
+    </logger>
 
 </configuration>
