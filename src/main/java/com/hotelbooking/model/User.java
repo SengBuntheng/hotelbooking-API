@@ -15,9 +15,10 @@ import java.util.UUID;
 @ToString(exclude = {"bookings", "reviews"})
 public class User extends BaseEntity {
 
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private long id;
 
     @Column(name = "uuid", updatable = false, nullable = false, unique = true)
     private UUID uuid = UUID.randomUUID();
@@ -37,8 +38,12 @@ public class User extends BaseEntity {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    private boolean active = false;
+    @Transient
     private String token;
+
+    @Column(name = "active", nullable = false)
+    private boolean active = false;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Booking> bookings;
 
@@ -51,4 +56,6 @@ public class User extends BaseEntity {
             this.uuid = UUID.randomUUID();
         }
     }
+
+
 }

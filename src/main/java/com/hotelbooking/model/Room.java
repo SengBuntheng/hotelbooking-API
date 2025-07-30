@@ -15,10 +15,9 @@ import java.util.List;
 @Entity
 @Table(name = "room")
 public class Room extends BaseEntity {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private long id;
     @Column(name = "room_number", nullable = false)
     private String roomNumber;
 

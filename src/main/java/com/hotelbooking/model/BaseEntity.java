@@ -11,8 +11,6 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.Date;
-
 
 @Getter
 @Setter
@@ -20,12 +18,16 @@ import java.util.Date;
 @EntityListeners(AuditingEntityListener.class)
 public abstract class BaseEntity implements Serializable {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+
+    // REMOVED: The @Id and @GeneratedValue should be defined in each
+    // concrete entity class (like User, Booking, etc.), not in the base class.
+    // This provides more flexibility and avoids potential mapping conflicts.
+    // @Id
+    // @GeneratedValue(strategy = GenerationType.IDENTITY)
+    // private Long id;
 
     @CreatedBy
-//    @Column(name = "created_by", updatable = false)
+    @Column(name = "created_by", updatable = false)
     private String createdBy;
 
     @CreatedDate
@@ -38,5 +40,5 @@ public abstract class BaseEntity implements Serializable {
 
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
-    private Date updatedAt;
+    private LocalDateTime updatedAt;
 }

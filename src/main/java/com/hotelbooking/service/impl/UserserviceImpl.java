@@ -49,41 +49,45 @@ public class UserserviceImpl implements UserService  {
     @Transactional
     @Override
     public UserRespone Create(UserRequest userRequest) {
-        boolean exists = userRepository.findByEmail(userRequest.getEmail()).isPresent();
-        log.debug("Checking if email exists in DB: {} -> {}", userRequest.getEmail(), exists);
-        if (exists) {
+        if (userRepository.findByEmail(userRequest.getEmail()).isPresent()) {
             throw new GlobalExceptionHandler.DuplicateResourceException("An account with this email already exists.");
         }
 
         userHandlerService.validateUserRequest(userRequest);
+
         User user = new User();
-        user.setActive(false);
-        user.setEmail(userRequest.getEmail());
-        user.setPasswordHash(passwordEncoder.encode(userRequest.getPassword()));
-        user.setPhone(userRequest.getPhone());
         user.setFirstName(userRequest.getFirstName());
         user.setLastName(userRequest.getLastName());
-        user.setCreatedAt(LocalDateTime.now());
-        user.setUpdatedAt(new Date());
-        user.setCreatedBy("system");
-        user.setUpdatedBy("system");
-        String token = jwtUtils.generateToken(user.getEmail());
-        user.setToken(token);
+        user.setEmail(userRequest.getEmail());
+        user.setPhone(userRequest.getPhone());
+        user.setPasswordHash(passwordEncoder.encode(userRequest.getPassword()));
+
+        user.setActive(false);
+
+
+        // Save the user to the database
         User savedUser = userRepository.save(user);
-        log.info("Created user: {}", savedUser.getEmail());
+        log.info("Created inactive user: {}", savedUser.getEmail());
+
+        String token = jwtUtils.generateToken(savedUser.getEmail());
+
+
         UserRespone response = modelMapper.map(savedUser, UserRespone.class);
         response.setToken(token);
         return response;
     }
     @Override
     public UserRespone Update(User user) {
-        Optional<User> existingUser = userRepository.findById(user.getId());
-        if (existingUser.isPresent()) {
-            User updatedUser = userRepository.save(user);
-            return modelMapper.map(updatedUser, UserRespone.class);
-        }
-        log.warn("User with ID {} not found for update", user.getId());
-        return null;
+        return userRepository.findById(user.getId())
+                .map(existingUser -> {
+                    existingUser.setFirstName(user.getFirstName());
+                    existingUser.setLastName(user.getLastName());
+                    existingUser.setPhone(user.getPhone());
+                    existingUser.setUpdatedAt(LocalDateTime.now());
+                    User updatedUser = userRepository.save(existingUser);
+                    return modelMapper.map(updatedUser, UserRespone.class);
+                })
+                .orElse(null);
     }
     @Override
     public UserRespone Delete(User user) {
@@ -92,7 +96,10 @@ public class UserserviceImpl implements UserService  {
 
     @Override
     public UserRespone findbyid(Long id) {
-        return null;
+        return userRepository.findById(id)
+                .map(user -> modelMapper.map(user, UserRespone.class))
+                .orElse(null);
+
     }
 
     @Override
@@ -105,7 +112,7 @@ public class UserserviceImpl implements UserService  {
 
     @Override
     public boolean userExists(String email) {
-        return false;
+        return userRepository.findByEmail(email).isPresent();
     }
 
     @Override
@@ -117,6 +124,7 @@ public class UserserviceImpl implements UserService  {
     }
 
     public User findbyemail(String em) {
-        return null;
-    }
+        return userRepository.findByEmail(em).orElse(null);
+
+    };
 }

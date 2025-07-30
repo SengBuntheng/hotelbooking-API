@@ -3,7 +3,7 @@ package com.hotelbooking.service;
 import com.hotelbooking.Config.EmailTemplateService;
 import com.hotelbooking.Enum.VerificationResult;
 import com.hotelbooking.dto.OtpDetails;
-import com.hotelbooking.exception.OtpException;
+import com.hotelbooking.GlobalException.OtpException;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;

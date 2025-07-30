@@ -1,6 +1,6 @@
-package com.hotelbooking.exception;
+package com.hotelbooking.GlobalException;
 
-public class OtpException extends Exception {
+public class OtpException extends RuntimeException {
   public OtpException(String message) {
     super(message);
   }

@@ -55,8 +55,9 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/error",
                                 "/api/test/send-test",
-                                "/api/test/**",
-                                "/test/**"
+                                "/v1/users/**",
+                                "/test/**",
+                                "/v1/auth/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

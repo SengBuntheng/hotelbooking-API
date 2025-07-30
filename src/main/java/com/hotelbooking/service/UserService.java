@@ -11,11 +11,15 @@ import org.springframework.stereotype.Service;
 
 @Service
 public interface UserService {
-    UserRespone Create (UserRequest userRequest);
-    UserRespone Update (User user);
-    UserRespone Delete (User user);
-    UserRespone findbyid (Long id);
+    UserRespone Create(UserRequest userRequest);
+    UserRespone Update(User user);
+    UserRespone Delete(User user);
+    UserRespone findbyid(Long id);
     List<UserRespone> findAll();
-    boolean userExists(String email);
+
+    // ADDED: Activates a user's account after OTP verification.
     void activateUser(String email);
+
+    // ADDED: Checks if a user exists by their email.
+    boolean userExists(String email);
 }

@@ -1,21 +1,38 @@
 package com.hotelbooking.Config;
 
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StreamUtils;
+import org.springframework.util.FileCopyUtils;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 
 @Service
 public class EmailTemplateService {
 
-    public String buildVerificationEmail(String otpCode) throws IOException {
-        ClassPathResource resource = new ClassPathResource("templates/email-verification.html");
-        String template = StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
+    /**
+     * Reads the otp-email-template.html file, replaces the placeholder
+     * with the actual OTP, and returns the full HTML content as a string.
+     *
+     * @param otp The 6-digit one-time password.
+     * @return The formatted HTML email content.
+     * @throws IOException If the template file cannot be read.
+     */
+    public String buildVerificationEmail(String otp) throws IOException {
+        // Load the template from the classpath resources
+        String template = readTemplateFile("/templates/email-verification.html");
 
-        // Replace placeholders
-        return template.replace("{{OTP_CODE}}", otpCode)
-                .replace("{{EXPIRY_MINUTES}}", "5");
+        // Replace the placeholder with the actual OTP
+        return template.replace("{{otp}}", otp);
+    }
+
+    private String readTemplateFile(String path) throws IOException {
+        try (Reader reader = new InputStreamReader(
+                this.getClass().getResourceAsStream(path), StandardCharsets.UTF_8)) {
+            return FileCopyUtils.copyToString(reader);
+        } catch (Exception e) {
+            throw new IOException("Could not read email template file: " + path, e);
+        }
     }
 }

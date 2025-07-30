@@ -15,7 +15,7 @@ public class HotelAmenity extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private long id;
     @Column(name = "amenity_name", nullable = false)
     private String amenityName;
 

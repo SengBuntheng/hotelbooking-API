@@ -1,22 +1,15 @@
 package com.hotelbooking.dto;
 
-import lombok.*;
-
+import lombok.Data;
 import java.time.LocalDateTime;
-@AllArgsConstructor
-@NoArgsConstructor
-@Getter
-@Setter
+
 @Data
 public class OtpDetails {
-    private String email;
-    private String otp;
-    private LocalDateTime expirationTime;
-    private int attemptCount;
+    private final String otp;
+    private final LocalDateTime expirationTime;
+    private int attempts = 0;
 
-
-
-    public boolean isMaxAttemptsReached(int maxAttempts) {
-        return attemptCount >= maxAttempts;
+    public int incrementAttempts() {
+        return ++this.attempts;
     }
 }
