@@ -15,7 +15,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 @Component
-@Profile("prod") // Only run this notifier in the 'prod' environment
+@Profile("prod")
 @Slf4j
 public class ApplicationLifecycleNotifier {
 
@@ -36,7 +36,7 @@ public class ApplicationLifecycleNotifier {
     public void onApplicationReady() {
         log.info("Application has started. Sending startup notification to Telegram.");
         String message = String.format(
-                "? *Application Started*\n\n" +
+                "\u2705 *Application Started*\n\n" +
                         "*Time:* `%s`\n" +
                         "*Server:* `%s`\n\n" +
                         "The service is now online and operational.",
@@ -50,7 +50,7 @@ public class ApplicationLifecycleNotifier {
     public void onShutdown() {
         log.info("Application is shutting down. Sending shutdown notification to Telegram.");
         String message = String.format(
-                "?? *Application Shutting Down*\n\n" +
+                "\uD83D\uDEA8 *Application Shutting Down*\n\n" +
                         "*Time:* `%s`\n" +
                         "*Server:* `%s`\n\n" +
                         "The service is shutting down gracefully.",
