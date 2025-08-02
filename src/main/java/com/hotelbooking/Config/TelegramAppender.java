@@ -10,12 +10,23 @@ import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 public class TelegramAppender extends AppenderBase<ILoggingEvent> {
+    private final TelegramNotificationService telegramService = new TelegramNotificationService();
 
+    public void setToken(String token) {
+        telegramService.setBotToken(token);
+    }
+
+    public void setChatId(String chatId) {
+        telegramService.setChatId(chatId);
+    }
+
+    public void setEnvironment(String environment) {
+        this.environment = environment;
+    }
     private static final DateTimeFormatter TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z")
                     .withZone(ZoneId.of("UTC"));
 
-    private final TelegramNotificationService telegramService = new TelegramNotificationService();
     private String environment = "prod";
     private boolean includeStacktrace = true;
 

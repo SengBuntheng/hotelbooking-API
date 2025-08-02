@@ -16,16 +16,17 @@ public class TelegramNotificationService {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${telegram.alert.bot-token:}")
     private String botToken;
-
-    @Value("${telegram.alert.chat-id:}")
     private String chatId;
 
-    /**
-     * Sends a simple text message to the configured Telegram chat.
-     * @param message The text to send. Supports Markdown.
-     */
+    public void setBotToken(String botToken) {
+        this.botToken = botToken;
+    }
+
+    public void setChatId(String chatId) {
+        this.chatId = chatId;
+    }
+
     public void sendMessage(String message) {
         if (botToken == null || chatId == null || botToken.isEmpty() || chatId.isEmpty()) {
             log.warn("Telegram bot token or chat ID is not configured. Skipping notification.");
