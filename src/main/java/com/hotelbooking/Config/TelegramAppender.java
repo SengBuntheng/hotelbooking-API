@@ -67,12 +67,18 @@ public class TelegramAppender extends AppenderBase<ILoggingEvent> {
      * Sends a plain text message to Telegram. Used for INFO, WARN, etc.
      */
     private void sendTelegramMessage(String message) {
-        String url = UriComponentsBuilder.fromHttpUrl("https://api.telegram.org/bot" + token + "/sendMessage")
-                .queryParam("chat_id", chatId)
-                .queryParam("text", message)
-                .queryParam("parse_mode", "Markdown")
-                .toUriString();
-        restTemplate.getForObject(url, String.class);
+        String url = "https://api.telegram.org/bot" + token + "/sendMessage";
+
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+        body.add("chat_id", chatId);
+        body.add("text", message);
+        body.add("parse_mode", "Markdown");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
+        restTemplate.postForObject(url, request, String.class);
     }
 
     /**
