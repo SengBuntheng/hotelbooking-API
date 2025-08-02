@@ -86,7 +86,7 @@ public class TelegramAppender extends AppenderBase<ILoggingEvent> {
 
     // TODO: Implement helpers below properly
     private boolean isRateLimitExceeded() { return false; }
-    private String getHostName() { return "localhost"; }
+    private String getHostName() { return "api.bakongcity.city"; }
     private String getExternalIp() { return "api.bakongcity.city/ip"; } // implement GET request
     private LocationInfo getLocationInfo(String ip) { return null; }
     private long getJvmUptime() { return 12345; }
