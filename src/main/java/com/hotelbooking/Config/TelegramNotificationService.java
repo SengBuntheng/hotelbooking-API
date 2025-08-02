@@ -43,28 +43,25 @@ public class TelegramNotificationService {
         }
 
         try {
-            String url = TELEGRAM_API_URL + botToken + "/sendMessage";
+            String url = "https://api.telegram.org/bot" + botToken + "/sendMessage";
 
             MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
             body.add("chat_id", chatId);
-            body.add("text", escapeMarkdownV2(message));
-            body.add("parse_mode", "MarkdownV2");
+            body.add("text", message);
+            body.add("parse_mode", "Markdown");
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
             HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
+            String response = restTemplate.postForObject(url, request, String.class);
 
-            ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
-
-            if (!response.getStatusCode().is2xxSuccessful()) {
-                log.error("Failed to send Telegram message. Status: {}, Response: {}",
-                        response.getStatusCode(), response.getBody());
-            }
-        } catch (RestClientException e) {
-            log.error("Exception while sending Telegram notification.", e);
+            log.info("Telegram response: {}", response);  // Log the Telegram API response
+        } catch (Exception e) {
+            log.error("Failed to send Telegram notification.", e);
         }
     }
+
 
     private String escapeMarkdownV2(String text) {
         if (text == null) return "";
