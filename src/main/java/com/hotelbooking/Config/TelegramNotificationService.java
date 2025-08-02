@@ -17,12 +17,11 @@ public class TelegramNotificationService {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${TELEGRAM_BOT_TOKEN}")
+    @Value("${telegram.alert.bot-token:}")
     private String botToken;
 
-    @Value("${TELEGRAM_CHAT_ID}")
+    @Value("${telegram.alert.chat-id:}")
     private String chatId;
-
     /**
      * Sends a simple text message to the configured Telegram chat.
      * @param message The text to send. Supports Markdown.
