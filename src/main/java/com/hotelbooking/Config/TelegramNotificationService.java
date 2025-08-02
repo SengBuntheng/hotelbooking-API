@@ -1,23 +1,32 @@
 package com.hotelbooking.Config;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClientException;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 
 @Service
 @Slf4j
 public class TelegramNotificationService {
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private static final String TELEGRAM_API_URL = "https://api.telegram.org/bot";
+
+    private final RestTemplate restTemplate;
 
     private String botToken;
     private String chatId;
+
+    public TelegramNotificationService() {
+        // Customize timeout
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(3000); // 3 sec
+        requestFactory.setReadTimeout(3000);    // 3 sec
+        this.restTemplate = new RestTemplate(requestFactory);
+    }
 
     public void setBotToken(String botToken) {
         this.botToken = botToken;
@@ -34,20 +43,50 @@ public class TelegramNotificationService {
         }
 
         try {
-            String url = "https://api.telegram.org/bot" + botToken + "/sendMessage";
+            String url = TELEGRAM_API_URL + botToken + "/sendMessage";
 
             MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
             body.add("chat_id", chatId);
-            body.add("text", message);
-            body.add("parse_mode", "Markdown");
+            body.add("text", escapeMarkdownV2(message));
+            body.add("parse_mode", "MarkdownV2");
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
             HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
-            restTemplate.postForObject(url, request, String.class);
-        } catch (Exception e) {
-            log.error("Failed to send Telegram notification.", e);
+
+            ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                log.error("Failed to send Telegram message. Status: {}, Response: {}",
+                        response.getStatusCode(), response.getBody());
+            }
+        } catch (RestClientException e) {
+            log.error("Exception while sending Telegram notification.", e);
         }
+    }
+
+    private String escapeMarkdownV2(String text) {
+        if (text == null) return "";
+        return text
+                .replace("\\", "\\\\")
+                .replace("_", "\\_")
+                .replace("*", "\\*")
+                .replace("[", "\\[")
+                .replace("]", "\\]")
+                .replace("(", "\\(")
+                .replace(")", "\\)")
+                .replace("~", "\\~")
+                .replace("`", "\\`")
+                .replace(">", "\\>")
+                .replace("#", "\\#")
+                .replace("+", "\\+")
+                .replace("-", "\\-")
+                .replace("=", "\\=")
+                .replace("|", "\\|")
+                .replace("{", "\\{")
+                .replace("}", "\\}")
+                .replace(".", "\\.")
+                .replace("!", "\\!");
     }
 }

@@ -4,8 +4,10 @@ import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
+import org.springframework.context.annotation.Profile;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.stereotype.Component;
 
 import java.net.InetAddress;
@@ -32,9 +34,11 @@ public class ApplicationLifecycleNotifier {
         this.serverHostName = getHostName();
     }
 
+    // Listen to application startup event
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
         log.info("Application has started. Sending startup notification to Telegram.");
+
         String message = String.format(
                 "\u2705 *Application Started*\n\n" +
                         "*Time:* %s\n" +
@@ -43,12 +47,15 @@ public class ApplicationLifecycleNotifier {
                 TIME_FORMATTER.format(Instant.now()),
                 serverHostName
         );
-        telegramService.sendMessage(message);
+
+        sendNotification(message);
     }
 
-    @PreDestroy
+    // Listen to application shutdown event
+    @EventListener(ContextClosedEvent.class)
     public void onShutdown() {
         log.info("Application is shutting down. Sending shutdown notification to Telegram.");
+
         String message = String.format(
                 "\uD83D\uDEA8 *Application Shutting Down*\n\n" +
                         "*Time:* %s\n" +
@@ -57,7 +64,21 @@ public class ApplicationLifecycleNotifier {
                 TIME_FORMATTER.format(Instant.now()),
                 serverHostName
         );
-        telegramService.sendMessage(message);
+
+        sendNotification(message);
+    }
+
+    private void sendNotification(String message) {
+        if (telegramService != null) {
+            try {
+                telegramService.sendMessage(message);
+                log.info("Notification sent to Telegram successfully.");
+            } catch (Exception e) {
+                log.error("Failed to send notification to Telegram.", e);
+            }
+        } else {
+            log.warn("Telegram service is not available. Notification not sent.");
+        }
     }
 
     private String getHostName() {

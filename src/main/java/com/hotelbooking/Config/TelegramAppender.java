@@ -13,6 +13,7 @@ public class TelegramAppender extends AppenderBase<ILoggingEvent> {
     private final TelegramNotificationService telegramService = new TelegramNotificationService();
     private String token;
     private String chatId;
+
     public void setToken(String token) {
         this.token = token;
         this.telegramService.setBotToken(token);
@@ -26,6 +27,7 @@ public class TelegramAppender extends AppenderBase<ILoggingEvent> {
     public void setEnvironment(String environment) {
         this.environment = environment;
     }
+
     private static final DateTimeFormatter TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z")
                     .withZone(ZoneId.of("UTC"));
@@ -42,11 +44,7 @@ public class TelegramAppender extends AppenderBase<ILoggingEvent> {
 
         try {
             String msg = formatMessage(event);
-            if (event.getLevel().equals(Level.ERROR)) {
-                telegramService.sendMessage(msg);  // Changed from "FIX THIS" to actual msg
-            } else {
-                telegramService.sendMessage(msg);
-            }
+            telegramService.sendMessage(msg);
         } catch (Exception e) {
             addError("Telegram send failed", e);
         }
@@ -68,44 +66,73 @@ public class TelegramAppender extends AppenderBase<ILoggingEvent> {
 
         StringBuilder sb = new StringBuilder()
                 .append(getEmojiForLevel(event.getLevel()))
-                .append(" *").append(environment.toUpperCase()).append(" ").append(event.getLevel()).append("*\n\n")
-                .append("*Time:* ").append(ts).append("\n")
-                .append("*Pod:* ").append(pod).append("\n")
-                .append("*Server IP:* ").append(extIp).append("\n");
+                .append(" *").append(escapeMarkdown(environment.toUpperCase())).append(" ")
+                .append(escapeMarkdown(event.getLevel().toString())).append("*\n\n")
+                .append("*Time:* ").append(escapeMarkdown(ts)).append("\n")
+                .append("*Pod:* ").append(escapeMarkdown(pod)).append("\n")
+                .append("*Server IP:* ").append(escapeMarkdown(extIp)).append("\n");
 
         if (loc != null) {
-            sb.append("*Location:* ").append(loc.getCity()).append(", ")
-                    .append(loc.getCountry()).append("\n");
+            sb.append("*Location:* ").append(escapeMarkdown(loc.getCity())).append(", ")
+                    .append(escapeMarkdown(loc.getCountry())).append("\n");
         }
 
         sb.append("*Uptime:* ").append(uptime).append(" sec\n")
                 .append("*Heap:* ").append(mem.heapUsedMB).append("MB / ").append(mem.heapMaxMB).append("MB\n")
                 .append("*CPU Load:* Proc: ").append(cpu.processLoad).append(", Sys: ")
                 .append(cpu.systemLoad).append("\n")
-                .append("*Requester IP:* ").append(requesterIp).append("\n")
-                .append("*Requester Host:* ").append(requesterHost).append("\n\n")
-                .append("*Message:*\n")
-                .append(event.getFormattedMessage()).append("\n");
+                .append("*Requester IP:* ").append(escapeMarkdown(requesterIp)).append("\n")
+                .append("*Requester Host:* ").append(escapeMarkdown(requesterHost)).append("\n\n")
+                .append("*Message:*\n```")
+                .append(escapeMarkdown(event.getFormattedMessage()))
+                .append("```\n");
 
         if (includeStacktrace && event.getThrowableProxy() != null) {
-            sb.append("\n*Stacktrace:*\n")
-                    .append(event.getThrowableProxy().getClassName()).append(": ")
-                    .append(event.getThrowableProxy().getMessage()).append("\n  at ")
-                    .append(getFirstStackTraceLine(event)).append("\n");
+            sb.append("\n*Stacktrace:*\n```")
+                    .append(escapeMarkdown(event.getThrowableProxy().getClassName()))
+                    .append(": ")
+                    .append(escapeMarkdown(event.getThrowableProxy().getMessage()))
+                    .append("\n  at ")
+                    .append(escapeMarkdown(getFirstStackTraceLine(event)))
+                    .append("```\n");
         }
 
         return sb.toString();
     }
 
+    private String escapeMarkdown(String text) {
+        if (text == null) return "";
+        return text
+                .replace("_", "\\_")
+                .replace("*", "\\*")
+                .replace("[", "\\[")
+                .replace("]", "\\]")
+                .replace("(", "\\(")
+                .replace(")", "\\)")
+                .replace("~", "\\~")
+                .replace("`", "\\`")
+                .replace(">", "\\>")
+                .replace("#", "\\#")
+                .replace("+", "\\+")
+                .replace("-", "\\-")
+                .replace("=", "\\=")
+                .replace("|", "\\|")
+                .replace("{", "\\{")
+                .replace("}", "\\}")
+                .replace(".", "\\.")
+                .replace("!", "\\!");
+    }
+
     // TODO: Implement helpers below properly
     private boolean isRateLimitExceeded() { return false; }
     private String getHostName() { return "api.bakongcity.city"; }
-    private String getExternalIp() { return "api.bakongcity.city/ip"; } // TODO: implement actual GET request
+    private String getExternalIp() { return "api.bakongcity.city/ip"; } // Replace with actual external IP logic if needed
     private LocationInfo getLocationInfo(String ip) { return null; }
     private long getJvmUptime() { return 12345; }
     private MemoryStats getMemoryStats() { return new MemoryStats(256, 512); }
     private CpuStats getCpuStats() { return new CpuStats(0.3, 0.5); }
     private String getFirstStackTraceLine(ILoggingEvent event) { return "Line info here"; }
+
     private String getEmojiForLevel(Level level) {
         return switch (level.levelStr) {
             case "ERROR" -> "\uD83D\uDED1";
@@ -119,12 +146,18 @@ public class TelegramAppender extends AppenderBase<ILoggingEvent> {
     // Placeholder classes
     public static class MemoryStats {
         public int heapUsedMB, heapMaxMB;
-        public MemoryStats(int used, int max) { this.heapUsedMB = used; this.heapMaxMB = max; }
+        public MemoryStats(int used, int max) {
+            this.heapUsedMB = used;
+            this.heapMaxMB = max;
+        }
     }
 
     public static class CpuStats {
         public double processLoad, systemLoad;
-        public CpuStats(double p, double s) { this.processLoad = p; this.systemLoad = s; }
+        public CpuStats(double p, double s) {
+            this.processLoad = p;
+            this.systemLoad = s;
+        }
     }
 
     public static class LocationInfo {
