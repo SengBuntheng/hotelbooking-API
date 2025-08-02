@@ -20,7 +20,7 @@
             IMPORTANT: Use environment variables for your secrets.
             Do NOT hardcode your token and chat ID here.
         -->
-        <token>${TELEGRAM_BOT_TOKEN}</token>
+        <token>${TELEGRAM_ALERT_BOT_TOKEN}</token>
         <chatId>${TELEGRAM_CHAT_ID}</chatId>
         <environment>prod</environment> <!-- Or any environment name you prefer -->
 

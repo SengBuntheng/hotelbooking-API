@@ -11,13 +11,16 @@ import java.util.Map;
 
 public class TelegramAppender extends AppenderBase<ILoggingEvent> {
     private final TelegramNotificationService telegramService = new TelegramNotificationService();
-
+    private String token;
+    private String chatId;
     public void setToken(String token) {
-        telegramService.setBotToken(token);
+        this.token = token;
+        this.telegramService.setBotToken(token);
     }
 
     public void setChatId(String chatId) {
-        telegramService.setChatId(chatId);
+        this.chatId = chatId;
+        this.telegramService.setChatId(chatId);
     }
 
     public void setEnvironment(String environment) {
