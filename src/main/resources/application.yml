@@ -208,7 +208,7 @@ logging:
 telegram:
   alert:
     enabled: true
-    bot-token: ${TELEGRAM_BOT_TOKEN}
-    chat-id: ${TELEGRAM_CHAT_ID}
+    bot-token: ${TELEGRAM_ALERT_BOT_TOKEN}
+    chat-id: ${TELEGRAM_ALERT_CHAT_ID}
     rate-limit: 5
     include-stacktrace: true

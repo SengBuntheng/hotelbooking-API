@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
 @Slf4j
@@ -22,6 +21,7 @@ public class TelegramNotificationService {
 
     @Value("${telegram.alert.chat-id:}")
     private String chatId;
+
     /**
      * Sends a simple text message to the configured Telegram chat.
      * @param message The text to send. Supports Markdown.

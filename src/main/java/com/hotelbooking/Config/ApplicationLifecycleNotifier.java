@@ -37,8 +37,8 @@ public class ApplicationLifecycleNotifier {
         log.info("Application has started. Sending startup notification to Telegram.");
         String message = String.format(
                 "\u2705 *Application Started*\n\n" +
-                        "*Time:* `%s`\n" +
-                        "*Server:* `%s`\n\n" +
+                        "*Time:* %s\n" +
+                        "*Server:* %s\n\n" +
                         "The service is now online and operational.",
                 TIME_FORMATTER.format(Instant.now()),
                 serverHostName
@@ -51,8 +51,8 @@ public class ApplicationLifecycleNotifier {
         log.info("Application is shutting down. Sending shutdown notification to Telegram.");
         String message = String.format(
                 "\uD83D\uDEA8 *Application Shutting Down*\n\n" +
-                        "*Time:* `%s`\n" +
-                        "*Server:* `%s`\n\n" +
+                        "*Time:* %s\n" +
+                        "*Server:* %s\n\n" +
                         "The service is shutting down gracefully.",
                 TIME_FORMATTER.format(Instant.now()),
                 serverHostName

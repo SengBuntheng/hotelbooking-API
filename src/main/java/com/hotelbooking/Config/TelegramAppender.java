@@ -3,7 +3,6 @@ package com.hotelbooking.Config;
 import ch.qos.logback.core.AppenderBase;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.Level;
-import com.hotelbooking.Config.TelegramNotificationService;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -30,11 +29,10 @@ public class TelegramAppender extends AppenderBase<ILoggingEvent> {
         try {
             String msg = formatMessage(event);
             if (event.getLevel().equals(Level.ERROR)) {
-                telegramService.sendMessage("FIX THIS");
+                telegramService.sendMessage(msg);  // Changed from "FIX THIS" to actual msg
             } else {
                 telegramService.sendMessage(msg);
             }
-
         } catch (Exception e) {
             addError("Telegram send failed", e);
         }
@@ -57,28 +55,29 @@ public class TelegramAppender extends AppenderBase<ILoggingEvent> {
         StringBuilder sb = new StringBuilder()
                 .append(getEmojiForLevel(event.getLevel()))
                 .append(" *").append(environment.toUpperCase()).append(" ").append(event.getLevel()).append("*\n\n")
-                .append("*Time:* `").append(ts).append("`\n")
-                .append("*Pod:* `").append(pod).append("`\n")
-                .append("*Server IP:* `").append(extIp).append("`\n");
+                .append("*Time:* ").append(ts).append("\n")
+                .append("*Pod:* ").append(pod).append("\n")
+                .append("*Server IP:* ").append(extIp).append("\n");
 
         if (loc != null) {
-            sb.append("*Location:* `").append(loc.getCity()).append(", ")
-                    .append(loc.getCountry()).append("`\n");
+            sb.append("*Location:* ").append(loc.getCity()).append(", ")
+                    .append(loc.getCountry()).append("\n");
         }
 
-        sb.append("*Uptime:* `").append(uptime).append(" sec`\n")
-                .append("*Heap:* `").append(mem.heapUsedMB).append("MB / ").append(mem.heapMaxMB).append("MB`\n")
-                .append("*CPU Load:* `Proc: ").append(cpu.processLoad).append("`, Sys: ")
-                .append(cpu.systemLoad).append("`\n")
-                .append("*Requester IP:* `").append(requesterIp).append("`\n")
-                .append("*Requester Host:* `").append(requesterHost).append("`\n\n")
-                .append("*Message:*\n```").append(event.getFormattedMessage()).append("```\n");
+        sb.append("*Uptime:* ").append(uptime).append(" sec\n")
+                .append("*Heap:* ").append(mem.heapUsedMB).append("MB / ").append(mem.heapMaxMB).append("MB\n")
+                .append("*CPU Load:* Proc: ").append(cpu.processLoad).append(", Sys: ")
+                .append(cpu.systemLoad).append("\n")
+                .append("*Requester IP:* ").append(requesterIp).append("\n")
+                .append("*Requester Host:* ").append(requesterHost).append("\n\n")
+                .append("*Message:*\n")
+                .append(event.getFormattedMessage()).append("\n");
 
         if (includeStacktrace && event.getThrowableProxy() != null) {
-            sb.append("\n*Stacktrace:*\n```")
+            sb.append("\n*Stacktrace:*\n")
                     .append(event.getThrowableProxy().getClassName()).append(": ")
                     .append(event.getThrowableProxy().getMessage()).append("\n  at ")
-                    .append(getFirstStackTraceLine(event)).append("\n```");
+                    .append(getFirstStackTraceLine(event)).append("\n");
         }
 
         return sb.toString();
@@ -87,7 +86,7 @@ public class TelegramAppender extends AppenderBase<ILoggingEvent> {
     // TODO: Implement helpers below properly
     private boolean isRateLimitExceeded() { return false; }
     private String getHostName() { return "api.bakongcity.city"; }
-    private String getExternalIp() { return "api.bakongcity.city/ip"; } // implement GET request
+    private String getExternalIp() { return "api.bakongcity.city/ip"; } // TODO: implement actual GET request
     private LocationInfo getLocationInfo(String ip) { return null; }
     private long getJvmUptime() { return 12345; }
     private MemoryStats getMemoryStats() { return new MemoryStats(256, 512); }
