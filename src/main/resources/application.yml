@@ -1,84 +1,3 @@
-#server:
-#  port: 8080
-#  error:
-#    include-message: always
-#
-#spring:
-#  application:
-#    name: hotel-booking-api
-#  profiles:
-#    active: dev
-#
-#  jpa:
-#    show-sql: true
-#    properties:
-#      hibernate:
-#        format_sql: true
-#    hibernate:
-#      ddl-auto: update
-#
-#springdoc:
-#  swagger-ui:
-#    path: /swagger-ui.html
-#  api-docs:
-#    path: /v3/api-docs
-#
-#app:
-#  jwt:
-#    secret: "k2iV7N3pR9sX6vB0tJg8FzW5LmZ1xQe4UkAjNcEyGhTwRyPoDuCvBxMzLsKaQdEr"
-#    expiration-ms: 86400000
-#  otp:
-#    expiration:
-#      minutes: 5
-#    max:
-#      attempts: 3
-#    cleanup:
-#      interval:
-#        ms: 60000
-#    resend:
-#      timeout:
-#        minutes: 1
-#
-#logging:
-#  level:
-#    org.springframework.web: DEBUG
-#    org.hibernate.SQL: DEBUG
-#    com.hotelbooking: DEBUG
-#    com.sun.mail: DEBUG
-#    jakarta.mail: DEBUG
-
----
-
-#spring:
-#  config:
-#    activate:
-#      on-profile: dev
-#
-#  datasource:
-#    url: jdbc:mysql://localhost:3306/hotelbooking_db_dev?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
-#    username: root
-#    password:
-#
-#  mail:
-#    host: smtp.gmail.com
-#    port: 587
-#    username: userstmp36
-#    password: gwfo uayv dvsm frer
-#    protocol: smtp
-#    properties:
-#      mail:
-#        smtp:
-#          from: verify@bakongcity.city
-#          auth: true
-#          starttls:
-#            enable: true
-#          connectiontimeout: 5000
-#          timeout: 5000
-#          writetimeout: 5000
-#          ssl.trust: smtp.gmail.com
-#        debug: true
-
----
 server:
   port: 8080
   error:
@@ -87,6 +6,7 @@ server:
 spring:
   application:
     name: hotel-booking-api
+
   profiles:
     active: dev
 
@@ -97,6 +17,30 @@ spring:
         format_sql: true
     hibernate:
       ddl-auto: update
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/hotelbooking_db_dev?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: root
+    password:
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: userstmp36
+    password: gwfo uayv dvsm frer
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          from: verify@bakongcity.city
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+          ssl.trust: smtp.gmail.com
+        debug: true
 
 springdoc:
   swagger-ui:
@@ -130,11 +74,10 @@ logging:
 
 aba:
   public:
-    key: 6476968ca9018ec5a9b56da467fe6ee847cda6ff3
-  api: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/
+    key: 6476968ca9018ec5a9b56da467fe6ee847cda6ff
   merchant: ec461249
-  callback: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/purchase
-
+  api: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/
+  callback: https://http://127.0.0.1:5500/v1/aba/callback # Replace with your actual public callback URL
 
 ---
 
@@ -142,13 +85,6 @@ spring:
   config:
     activate:
       on-profile: dev
-    banner:
-      location: classpath:banner
-    security:
-      user:
-        name: admin
-        password: Sengbuntheng1
-
 
   datasource:
     url: jdbc:mysql://localhost:3306/hotelbooking_db_dev?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
@@ -173,15 +109,12 @@ spring:
           writetimeout: 5000
           ssl.trust: smtp.gmail.com
         debug: true
+  security:
+    user:
+          name: admin
+          # password decoded from base64 YWRtaW46U2VuZ2J1bnRoZW5nMQ== is "admin:Sengbuntheng1"
+          password: Sengbuntheng1
 
-
-
-aba:
-  public:
-    key: 6476968ca9018ec5a9b56da467fe6ee847cda6ff3
-  api: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/
-  merchant: ec461249
-  callback: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/purchase
 
 ---
 
@@ -189,7 +122,7 @@ spring:
   config:
     activate:
       on-profile: prod
-      banner.location: classpath:banner
+
   datasource:
     url: jdbc:mysql://mysql-1d18ad22-bunthengseng9-7dfc.f.aivencloud.com:17288/defaultdb?useSSL=true&sslMode=REQUIRED
     username: avnadmin
@@ -220,6 +153,11 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
 
+  security:
+    user:
+      name: admin
+      password: Sengbuntheng1  # same decoded password here, adjust if needed
+
 logging:
   config: classpath:logback-spring-prod.xml
   level:
@@ -236,9 +174,15 @@ telegram:
     chat-id: ${TELEGRAM_ALERT_CHAT_ID}
     rate-limit: 5
     include-stacktrace: true
+
 aba:
   public:
-    key: b7c231e372efb55a7a8f822d70353fa98f9db730
+    key: 6476968ca9018ec5a9b56da467fe6ee847cda6ff
+  merchant: ec461249
   api: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/
-  merchant: ec460419
-  callback: http://localhost:8080/v1/aba/callback
+  callback: https://http://127.0.0.1:5500/v1/aba/callback
+
+
+#//////////////////////////////////////////////
+#ABA KH QR SERVICE AND API KEY
+#//////////////////////////////////////////////

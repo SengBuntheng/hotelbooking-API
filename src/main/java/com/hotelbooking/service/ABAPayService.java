@@ -43,22 +43,16 @@ public class ABAPayService {
         this.messagingTemplate = messagingTemplate;
     }
 
-    // *********************************************************************************** //
-    // *********************************************************************************** //
-
     public ResponseEntity<byte[]> qrImage(double amount, String ccy, String txnId) {
         try {
             GenerateQrResponse exGenerateQrResponse = proceedQrRequest(amount, ccy, txnId);
-            if (exGenerateQrResponse == null) return null;
-
-            // Check status before assign
-            if (!exGenerateQrResponse.getStatus().getCode().equals("0")) {
-                logger.error("Error request generate ABA KHQR: {}", exGenerateQrResponse.getStatus().getMessage());
-                return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            if (exGenerateQrResponse == null || !exGenerateQrResponse.getStatus().getCode().equals("0")) {
+                logger.error("Failed to generate QR: {}",
+                        exGenerateQrResponse != null ? exGenerateQrResponse.getStatus().getMessage() : "No response");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
             }
 
-            String base64Img = exGenerateQrResponse.getQrImage();
-            String imgData = base64Img.split(",")[1];
+            String imgData = exGenerateQrResponse.getQrImage().split(",")[1];
             byte[] imageBytes = Base64.getDecoder().decode(imgData);
 
             HttpHeaders headers = new HttpHeaders();
@@ -67,103 +61,37 @@ public class ABAPayService {
             return new ResponseEntity<>(imageBytes, headers, HttpStatus.OK);
         } catch (Exception e) {
             logger.error("Error generating QR image: {}", e.getMessage(), e);
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
     public void txnCallback(CallbackRequest request) {
         try {
-
-            // Uncomment this if you want websocket broadcast always success
-            // sendPaymentStatus(request.getTran_id(), "SUCCESS");
-
             CheckTxnResponse checkTxnResponse = checkTransaction(request.getTran_id());
 
             if (checkTxnResponse == null || !checkTxnResponse.getStatus().getCode().equals("00")) {
-                assert checkTxnResponse != null;
-                sendPaymentStatus(request.getTran_id(), "FAIL, " + checkTxnResponse.getStatus().getMessage());
+                String message = checkTxnResponse != null ? checkTxnResponse.getStatus().getMessage() : "No response";
+                sendPaymentStatus(request.getTran_id(), "FAIL, " + message);
                 return;
             }
 
             if (checkTxnResponse.getData() != null) {
-
                 switch (checkTxnResponse.getData().getPayment_status_code()) {
-                    case 0:
-                        sendPaymentStatus(request.getTran_id(), "SUCCESS");
-                        break;
-                    case 2:
-                        sendPaymentStatus(request.getTran_id(), "PENDING");
-                        break;
-                    case 3:
-                        sendPaymentStatus(request.getTran_id(), "DECLINED");
-                        break;
-                    case 4:
-                        sendPaymentStatus(request.getTran_id(), "REFUNDED");
-                        break;
-                    case 7:
-                        sendPaymentStatus(request.getTran_id(), "CANCELLED");
-                        break;
-                    default:
-                        sendPaymentStatus(request.getTran_id(), "FAILED");
-                        break;
+                    case 0 -> sendPaymentStatus(request.getTran_id(), "SUCCESS");
+                    case 2 -> sendPaymentStatus(request.getTran_id(), "PENDING");
+                    case 3 -> sendPaymentStatus(request.getTran_id(), "DECLINED");
+                    case 4 -> sendPaymentStatus(request.getTran_id(), "REFUNDED");
+                    case 7 -> sendPaymentStatus(request.getTran_id(), "CANCELLED");
+                    default -> sendPaymentStatus(request.getTran_id(), "FAILED");
                 }
-
             }
-
         } catch (Exception e) {
-            logger.error("Error processing transaction callback: {}", e.getMessage(), e);
+            logger.error("Callback processing error: {}", e.getMessage(), e);
             sendPaymentStatus(request.getTran_id(), "FAIL, " + e.getMessage());
         }
     }
 
-    // *********************************************************************************** //
-    // *********************************************************************************** //
-
-    private String generateHashString(GenerateQrRequest request) {
-        String b4hash = summaryObjectToString(request);
-
-        try {
-            // Generate the HMAC hash using SHA-512
-            Mac sha512HMAC = Mac.getInstance("HmacSHA512");
-            SecretKeySpec secretKeySpec = new SecretKeySpec(apiKey.getBytes(), "HmacSHA512");
-            sha512HMAC.init(secretKeySpec);
-            byte[] hashBytes = sha512HMAC.doFinal(b4hash.getBytes());
-            return Base64.getEncoder().encodeToString(hashBytes);
-        } catch (Exception e) {
-            logger.error("Error generating hash string: {}", e.getMessage(), e);
-            throw new RuntimeException(e.getMessage());
-        }
-    }
-
-    private static String summaryObjectToString(GenerateQrRequest request) {
-        return (request.getReq_time() + request.getMerchant_id() +
-                request.getTran_id() + request.getAmount() +
-                request.getItems() + request.getFirst_name() +
-                request.getLast_name() + request.getEmail() +
-                request.getPhone() + request.getPurchase_type() +
-                request.getPayment_option() + request.getCallback_url() +
-                request.getReturn_deeplink() + request.getCurrency() +
-                request.getCustom_fields() + request.getReturn_params() +
-                request.getPayout() + request.getLifetime() +
-                request.getQr_image_template()
-        ).replaceAll("null", "");
-    }
-
-    private GenerateQrResponse requestQr(GenerateQrRequest request) {
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            String json = objectMapper.writeValueAsString(request);
-            Unirest.setTimeouts(0, 0);
-            HttpResponse<String> response = Unirest.post(baseUrl + "generate-qr")
-                    .header("Content-Type", "application/json")
-                    .body(json)
-                    .asString();
-            return objectMapper.readValue(response.getBody(), GenerateQrResponse.class);
-        } catch (Exception e) {
-            logger.error("Error requesting QR: {}", e.getMessage(), e);
-            throw new RuntimeException(e.getMessage());
-        }
-    }
+    // ******************* Internal Helpers ********************
 
     private GenerateQrResponse proceedQrRequest(double amount, String ccy, String txnId) {
         try {
@@ -174,7 +102,7 @@ public class ABAPayService {
             requestBody.setLifetime(3);
             requestBody.setMerchant_id(merchantId);
             requestBody.setPayment_option("abapay_khqr");
-            requestBody.setQr_image_template("template6_color"); // Reference: https://developer.payway.com.kh/folder-3158158#customize-khqr-display-optional
+            requestBody.setQr_image_template("template6_color");
             requestBody.setReq_time(dateTimeString());
             requestBody.setTran_id(txnId);
 
@@ -184,29 +112,38 @@ public class ABAPayService {
             return requestQr(requestBody);
         } catch (Exception e) {
             logger.error("Error processing QR request: {}", e.getMessage(), e);
-            throw new RuntimeException(e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 
-    private void sendPaymentStatus(String transactionId, String status) {
-        messagingTemplate.convertAndSend("/topic/payment-status", Map.of(
-                "transactionId", transactionId,
-                "status", status
-        ));
+    private GenerateQrResponse requestQr(GenerateQrRequest request) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            String json = objectMapper.writeValueAsString(request);
+            HttpResponse<String> response = Unirest.post(baseUrl + "generate-qr")
+                    .header("Content-Type", "application/json")
+                    .body(json)
+                    .asString();
+
+            return objectMapper.readValue(response.getBody(), GenerateQrResponse.class);
+        } catch (Exception e) {
+            logger.error("Error requesting QR: {}", e.getMessage(), e);
+            throw new RuntimeException(e);
+        }
     }
 
     private CheckTxnResponse checkTransaction(String txnId) {
         try {
             CheckTxnRequest request = new CheckTxnRequest();
-            request.setReq_time(dateTimeString());
+            String reqTime = dateTimeString();
+            request.setReq_time(reqTime);
             request.setMerchant_id(merchantId);
             request.setTran_id(txnId);
-            request.setHash(generateHashVerifyTxn(txnId, request.getReq_time()));
+            request.setHash(generateHashVerifyTxn(txnId, reqTime));
 
             ObjectMapper objectMapper = new ObjectMapper();
             String json = objectMapper.writeValueAsString(request);
 
-            Unirest.setTimeouts(0, 0);
             HttpResponse<String> response = Unirest.post(baseUrl + "check-transaction-2")
                     .header("Content-Type", "application/json")
                     .body(json)
@@ -214,24 +151,58 @@ public class ABAPayService {
 
             return objectMapper.readValue(response.getBody(), CheckTxnResponse.class);
         } catch (Exception e) {
-            logger.error("Error checking transaction: {}", e.getMessage(), e);
-            throw new RuntimeException(e.getMessage());
+            logger.error("Transaction check error: {}", e.getMessage(), e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    private String generateHashString(GenerateQrRequest request) {
+        try {
+            String b4hash = summaryObjectToString(request);
+            Mac sha512HMAC = Mac.getInstance("HmacSHA512");
+            SecretKeySpec secretKey = new SecretKeySpec(apiKey.getBytes(), "HmacSHA512");
+            sha512HMAC.init(secretKey);
+            byte[] hashBytes = sha512HMAC.doFinal(b4hash.getBytes());
+            return Base64.getEncoder().encodeToString(hashBytes);
+        } catch (Exception e) {
+            logger.error("Hash generation failed: {}", e.getMessage(), e);
+            throw new RuntimeException(e);
         }
     }
 
     private String generateHashVerifyTxn(String txnId, String reqTime) {
-        String plainHash = reqTime + merchantId + txnId;
         try {
-            // Generate the HMAC hash using SHA-512
+            String plainHash = reqTime + merchantId + txnId;
             Mac sha512HMAC = Mac.getInstance("HmacSHA512");
-            SecretKeySpec secretKeySpec = new SecretKeySpec(apiKey.getBytes(), "HmacSHA512");
-            sha512HMAC.init(secretKeySpec);
+            SecretKeySpec secretKey = new SecretKeySpec(apiKey.getBytes(), "HmacSHA512");
+            sha512HMAC.init(secretKey);
             byte[] hashBytes = sha512HMAC.doFinal(plainHash.getBytes());
             return Base64.getEncoder().encodeToString(hashBytes);
         } catch (Exception e) {
-            logger.error("Error generating hash for transaction verification: {}", e.getMessage(), e);
-            throw new RuntimeException(e.getMessage());
+            logger.error("Verification hash generation failed: {}", e.getMessage(), e);
+            throw new RuntimeException(e);
         }
+    }
+
+    private String summaryObjectToString(GenerateQrRequest request) {
+        return (request.getReq_time() + request.getMerchant_id() +
+                request.getTran_id() + request.getAmount() +
+                request.getItems() + request.getFirst_name() +
+                request.getLast_name() + request.getEmail() +
+
+                request.getPhone() + request.getPurchase_type() +
+                request.getPayment_option() + request.getCallback_url() +
+                request.getReturn_deeplink() + request.getCurrency() +
+                request.getCustom_fields() + request.getReturn_params() +
+                request.getPayout() + request.getLifetime() +
+                request.getQr_image_template()).replaceAll("null", "");
+    }
+
+    private void sendPaymentStatus(String transactionId, String status) {
+        messagingTemplate.convertAndSend("/topic/payment-status", Map.of(
+                "transactionId", transactionId,
+                "status", status
+        ));
     }
 
     private String encodeCallBackUrl() {

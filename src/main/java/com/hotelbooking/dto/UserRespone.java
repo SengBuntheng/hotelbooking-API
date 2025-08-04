@@ -2,6 +2,7 @@ package com.hotelbooking.dto;
 
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.hotelbooking.model.User;
 import lombok.*;
 
 import java.sql.Timestamp;
@@ -18,6 +19,7 @@ public class UserRespone {
     private UUID uuid;
     private String firstName;
     private String lastName;
+    private String username;
     private String email;
     private String phone;
 
@@ -28,4 +30,6 @@ public class UserRespone {
 
     private Integer code;
     private String message;
+
+
 }

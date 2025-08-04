@@ -1,35 +1,24 @@
 package com.hotelbooking.service.impl;
 
 import com.hotelbooking.Config.JwtService;
-import com.hotelbooking.GlobalException.GlobalExceptionHandler;
 import com.hotelbooking.Repository.UserRepository;
-import com.hotelbooking.dto.LoginRequest;
-import com.hotelbooking.dto.LoginResponse;
 import com.hotelbooking.dto.UserRequest;
 import com.hotelbooking.dto.UserRespone;
 import com.hotelbooking.model.User;
 import com.hotelbooking.service.UserService;
 import com.hotelbooking.service.handler.UserHandlerService;
-import io.jsonwebtoken.Jwt;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
-import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -63,49 +52,36 @@ public class UserserviceImpl implements UserService  {
     @Transactional
     @Override
     public UserRespone Create(UserRequest userRequest) {
-        try {
-            // Authenticate user
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            userRequest.getUsername(),
-                            userRequest.getPassword()
-                    )
-            );
-
-            if (!authentication.isAuthenticated()) {
-                UserRespone response = new UserRespone();
-                response.setCode(HttpStatus.UNAUTHORIZED.value());
-                response.setMessage("Login failed.");
-                return response;
-            }
-
-            // Retrieve user from the database
-            Optional<User> optionalUser = userRepository.findByUsername(userRequest.getUsername());
-            if (optionalUser.isEmpty()) {
-                throw new UsernameNotFoundException("User not found.");
-            }
-
-            User user = optionalUser.get();
-
-            // Generate JWT token
-            String token = jwtUtils.generateToken(user.getUsername());
-
-            // Build response
-            UserRespone response = new UserRespone();
-            BeanUtils.copyProperties(user, response);
-            response.setToken(token);
-            response.setTokenExp(new Timestamp(System.currentTimeMillis() + 600_000)); // 10 minutes
-            response.setCode(HttpStatus.OK.value());
-            response.setMessage("Login successfully.");
-
-            return response;
-
-        } catch (Exception ex) {
-            UserRespone response = new UserRespone();
-            response.setCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
-            response.setMessage("Login failed: " + ex.getMessage());
-            return response;
+        userHandlerService.validateUserRequest(userRequest);
+        User user = modelMapper.map(userRequest, User.class);
+        user.setPasswordHash(passwordEncoder.encode(userRequest.getPassword()));
+        user.setUuid(UUID.randomUUID());
+        user.setActive(true);
+        user.setCreatedBy("SYSTEM");
+        String token = jwtUtils.generateToken(user.getEmail());
+        User savedUser = userRepository.save(user);
+        if(userRepository.existsByEmail(user.getEmail())) {
+            throw  new IllegalArgumentException("Email already in use");
         }
+        if(userRepository.existsByUsername(userRequest.getUsername())) {
+            throw  new IllegalArgumentException("Username already in use");
+        }
+        userHandlerService.validateUserRequest(userRequest);
+
+
+        return UserRespone.builder()
+                .uuid(savedUser.getUuid())
+                .firstName(savedUser.getFirstName())
+                .lastName(savedUser.getLastName())
+                .username(savedUser.getUsername())
+                .email(savedUser.getEmail())
+                .phone(savedUser.getPhone())
+                .createdAt(savedUser.getCreateDate())
+                .token(token)
+                .tokenExp(new Timestamp(jwtUtils.extractExpiration(token).getTime()))
+                .code(200)
+                .message("User created successfully")
+                .build();
     }
 
 

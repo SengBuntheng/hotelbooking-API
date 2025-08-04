@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 public class EmailOtpService {
-    private static final Logger logger = LoggerFactory.getLogger(EmailOtpService.class);
+    private static final Logger logger = LoggerFactory.getLogger(com.hotelbooking.service.EmailOtpService.class);
     private static final int OTP_LENGTH = 6;
     private static final int MAX_OTP_VALUE = 999999;
 

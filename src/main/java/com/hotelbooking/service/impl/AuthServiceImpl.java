@@ -2,10 +2,11 @@ package com.hotelbooking.service.impl;
 
 import com.hotelbooking.Config.JwtService;
 import com.hotelbooking.Enum.VerificationResult;
-import com.hotelbooking.Repository.UserRepository;
-import com.hotelbooking.dto.LoginRequest;
-import com.hotelbooking.dto.LoginResponse;
 import com.hotelbooking.GlobalException.OtpException;
+import com.hotelbooking.Repository.UserRepository;
+import com.hotelbooking.dto.AuthenticationRequest;
+import com.hotelbooking.dto.LoginResponse;
+import com.hotelbooking.dto.UserRespone;
 import com.hotelbooking.model.User;
 import com.hotelbooking.service.AuthService;
 import com.hotelbooking.service.EmailOtpService;
@@ -16,9 +17,12 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import static com.hotelbooking.service.handler.AuthHandlerService.mapToUserResponse;
+import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -29,52 +33,109 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final EmailOtpService emailOtpService;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
-    public LoginResponse login(LoginRequest loginRequest) {
+    @Transactional(readOnly = true)
+    public LoginResponse login(AuthenticationRequest authenticationRequest) {
         try {
+            // Perform authentication using Spring Security
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            loginRequest.getEmail(),
-                            loginRequest.getPassword()
+                            authenticationRequest.getEmail(),
+                            authenticationRequest.getPassword()
                     )
             );
+
+            // Set authenticated user in the security context
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            User user = userRepository.findByEmail(loginRequest.getEmail())
-                    .orElseThrow(() -> new RuntimeException("User not found"));
+            // Load user from DB (ideally by username/email)
+            User user = userRepository.findByEmail(authenticationRequest.getEmail())
+                    .orElseThrow(() -> new OtpException.UserNotFoundException(
+                            "User not found with email: " + authenticationRequest.getEmail()
+                    ));
 
+            if (!user.getActive()) {
+                throw new OtpException.AuthenticationFailedException("Account is inactive");
+            }
+
+            // Generate JWT token
             String token = jwtService.generateToken(user.getEmail());
 
-            LoginResponse response = new LoginResponse();
-            response.setToken(token);
-            response.setUser(mapToUserResponse(user));
-            return response;
+            // Update last login timestamp
+            updateLastLogin(user);
 
+            // Return the response
+            return buildLoginResponse(user, token);
+
+        } catch (BadCredentialsException e) {
+            log.warn("Invalid credentials for email: {}", authenticationRequest.getEmail());
+            throw new OtpException.AuthenticationFailedException("Invalid email or password");
+        } catch (OtpException e) {
+            // Already a known custom exception
+            throw e;
         } catch (Exception e) {
-            log.error("Authentication failed for user: {}", loginRequest.getEmail(), e);
-            throw new BadCredentialsException("Invalid credentials");
+            log.error("Authentication failed for email: {}", authenticationRequest.getEmail(), e);
+            throw new OtpException.AuthenticationFailedException("Authentication failed");
         }
     }
 
+
     @Override
+    @Transactional
     public LoginResponse loginWithOtp(String email, String otp) {
-        VerificationResult result = emailOtpService.verifyOtp(email, otp);
+        try {
+            VerificationResult result = emailOtpService.verifyOtp(email, otp);
 
-        if (!result.isValid()) {
-            throw new OtpException("OTP verification failed: " + result.getStatus());
+            if (!result.isValid()) {
+                throw new OtpException.OtpVerificationException("OTP verification failed: " + result.getStatus());
+            }
+
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new OtpException.UserNotFoundException("User not found with email: " + email));
+
+            if (!user.getActive()) {
+                throw new OtpException.AuthenticationFailedException("Account is inactive");
+            }
+
+            String token = jwtService.generateToken(email);
+            updateLastLogin(user);
+
+            LoginResponse response = buildLoginResponse(user, token);
+            log.info("OTP login successful for user: {}", email);
+            return response;
+
+        } catch (OtpException.OtpVerificationException e) {
+            log.warn("OTP verification failed for email: {}", email);
+            throw e;
+        } catch (Exception e) {
+            log.error("OTP login failed for email: {}", email, e);
+            throw new OtpException.AuthenticationFailedException("OTP login failed");
         }
+    }
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found after OTP verification"));
+    private void updateLastLogin(User user) {
+        user.setLastLogin(LocalDateTime.now());
+        userRepository.save(user);
+    }
 
-        String token = jwtService.generateToken(email);
+    private LoginResponse buildLoginResponse(User user, String token) {
+        Objects.requireNonNull(user, "User cannot be null");
+        return LoginResponse.builder()
+                .token(token)
+                .user(mapToUserResponse(user))
+                .build();
+    }
 
-        LoginResponse response = new LoginResponse();
-        response.setToken(token);
-        response.setUser(mapToUserResponse(user));
-
-        log.info("OTP login successful for user: {}", email);
-        return response;
+    private UserRespone mapToUserResponse(User user) {
+        return UserRespone.builder()
+                .uuid(user.getUuid())
+                .email(user.getEmail())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .phone(user.getPhone())
+                .createdAt(user.getCreateDate())
+                .build();
     }
 }

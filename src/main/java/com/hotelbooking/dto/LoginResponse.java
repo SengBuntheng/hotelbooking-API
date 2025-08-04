@@ -7,7 +7,7 @@ import org.modelmapper.internal.bytebuddy.asm.Advice;
 import org.springframework.http.HttpStatus;
 
 import java.sql.Timestamp;
-// In LoginResponse.java
+
 import lombok.experimental.SuperBuilder;
 
 @Getter
@@ -15,20 +15,18 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-public class LoginResponse extends StatusResponse {
+public class LoginResponse {
     private String username;
     private Timestamp createDate;
     private Timestamp expDate;
     private Boolean active;
+    private String email;
     private String token;
     private Timestamp tokenExp;
-
+    private String phone;
     private UserRespone user;
-    public static LoginResponse responseError(HttpStatus status, String message) {
-        return LoginResponse.builder()
-                .code(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .message(message)
-                .build();
-    }
+
+
+
 
 }
