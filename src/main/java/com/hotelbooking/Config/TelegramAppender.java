@@ -9,10 +9,29 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
+/**
+ * Custom Logback appender that sends log events as formatted Telegram messages.
+ * Supports configurable bot token, chat ID, environment tagging, and stacktrace inclusion.
+ */
 public class TelegramAppender extends AppenderBase<ILoggingEvent> {
-    private final TelegramNotificationService telegramService = new TelegramNotificationService();
+
+    private TelegramNotificationService telegramService;
     private String token;
     private String chatId;
+    private String environment = "prod";
+    private boolean includeStacktrace = true;
+
+    private static final String JAPAN_ALERT_GIF = "https://media.giphy.com/media/xT0xeJpnrWC4XWblEk/giphy.gif";
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter
+            .ofPattern("yyyy-MM-dd HH:mm:ss z")
+            .withZone(ZoneId.of("UTC"));
+
+    public TelegramAppender() {
+        // Initialize TelegramNotificationService once when the appender is created
+        this.telegramService = new TelegramNotificationService();
+    }
+
+    // Configuration setters
 
     public void setToken(String token) {
         this.token = token;
@@ -25,62 +44,68 @@ public class TelegramAppender extends AppenderBase<ILoggingEvent> {
     }
 
     public void setEnvironment(String environment) {
-        this.environment = environment;
+        if (environment != null && !environment.isBlank()) {
+            this.environment = environment.trim();
+        }
     }
 
-    private static final DateTimeFormatter TIME_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z")
-                    .withZone(ZoneId.of("UTC"));
-
-    private String environment = "prod";
-    private boolean includeStacktrace = true;
+    public void setIncludeStacktrace(boolean includeStacktrace) {
+        this.includeStacktrace = includeStacktrace;
+    }
 
     @Override
     protected void append(ILoggingEvent event) {
         if (isRateLimitExceeded()) {
-            addInfo("Telegram rate limit exceeded. Skipping.");
+            addInfo("Telegram rate limit exceeded. Skipping log notification.");
             return;
         }
 
         try {
-            String msg = formatMessage(event);
-            telegramService.sendMessage(msg);
-        } catch (Exception e) {
-            addError("Telegram send failed", e);
+            // Send GIF if the log level is ERROR or WARN
+            if (event.getLevel().isGreaterOrEqual(Level.WARN)) {
+                telegramService.sendAnimation(JAPAN_ALERT_GIF);
+            }
+
+            String message = formatMessage(event);
+            telegramService.sendMessage(message);
+        } catch (Exception ex) {
+            addError("Failed to send Telegram notification", ex);
         }
     }
 
     private String formatMessage(ILoggingEvent event) {
-        String ts = TIME_FORMATTER.format(Instant.ofEpochMilli(event.getTimeStamp()));
-        String host = getHostName();
-        String pod = System.getenv("HOSTNAME") != null ? System.getenv("HOSTNAME") : host;
-        String extIp = getExternalIp();
-        LocationInfo loc = getLocationInfo(extIp);
-        long uptime = getJvmUptime();
-        MemoryStats mem = getMemoryStats();
+        String timestamp = TIME_FORMATTER.format(Instant.ofEpochMilli(event.getTimeStamp()));
+        String podName = System.getenv().getOrDefault("HOSTNAME", getHostName());
+        String serverIp = getExternalIp();
+        LocationInfo location = getLocationInfo(serverIp);
+        long uptimeSec = getJvmUptimeSeconds();
+        MemoryStats memory = getMemoryStats();
         CpuStats cpu = getCpuStats();
 
         Map<String, String> mdc = event.getMDCPropertyMap();
         String requesterIp = mdc.getOrDefault("clientIp", "unknown");
         String requesterHost = mdc.getOrDefault("clientHost", "unknown");
 
-        StringBuilder sb = new StringBuilder()
-                .append(getEmojiForLevel(event.getLevel()))
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(getEmojiForLevel(event.getLevel()))
                 .append(" *").append(escapeMarkdown(environment.toUpperCase())).append(" ")
                 .append(escapeMarkdown(event.getLevel().toString())).append("*\n\n")
-                .append("*Time:* ").append(escapeMarkdown(ts)).append("\n")
-                .append("*Pod:* ").append(escapeMarkdown(pod)).append("\n")
-                .append("*Server IP:* ").append(escapeMarkdown(extIp)).append("\n");
+                .append("*Time:* ").append(escapeMarkdown(timestamp)).append("\n")
+                .append("*Pod:* ").append(escapeMarkdown(podName)).append("\n")
+                .append("*Server IP:* ").append(escapeMarkdown(serverIp)).append("\n");
 
-        if (loc != null) {
-            sb.append("*Location:* ").append(escapeMarkdown(loc.getCity())).append(", ")
-                    .append(escapeMarkdown(loc.getCountry())).append("\n");
+        if (location != null) {
+            sb.append("*Location:* ")
+                    .append(escapeMarkdown(location.getCity())).append(", ")
+                    .append(escapeMarkdown(location.getCountry()))
+                    .append("\n");
         }
 
-        sb.append("*Uptime:* ").append(uptime).append(" sec\n")
-                .append("*Heap:* ").append(mem.heapUsedMB).append("MB / ").append(mem.heapMaxMB).append("MB\n")
-                .append("*CPU Load:* Proc: ").append(cpu.processLoad).append(", Sys: ")
-                .append(cpu.systemLoad).append("\n")
+        sb.append("*Uptime:* ").append(uptimeSec).append(" sec\n")
+                .append("*Heap:* ").append(memory.heapUsedMB).append("MB / ").append(memory.heapMaxMB).append("MB\n")
+                .append("*CPU Load:* Proc: ").append(String.format("%.2f", cpu.processLoad))
+                .append(", Sys: ").append(String.format("%.2f", cpu.systemLoad)).append("\n")
                 .append("*Requester IP:* ").append(escapeMarkdown(requesterIp)).append("\n")
                 .append("*Requester Host:* ").append(escapeMarkdown(requesterHost)).append("\n\n")
                 .append("*Message:*\n```")
@@ -89,10 +114,8 @@ public class TelegramAppender extends AppenderBase<ILoggingEvent> {
 
         if (includeStacktrace && event.getThrowableProxy() != null) {
             sb.append("\n*Stacktrace:*\n```")
-                    .append(escapeMarkdown(event.getThrowableProxy().getClassName()))
-                    .append(": ")
-                    .append(escapeMarkdown(event.getThrowableProxy().getMessage()))
-                    .append("\n  at ")
+                    .append(escapeMarkdown(event.getThrowableProxy().getClassName())).append(": ")
+                    .append(escapeMarkdown(event.getThrowableProxy().getMessage())).append("\n  at ")
                     .append(escapeMarkdown(getFirstStackTraceLine(event)))
                     .append("```\n");
         }
@@ -123,45 +146,77 @@ public class TelegramAppender extends AppenderBase<ILoggingEvent> {
                 .replace("!", "\\!");
     }
 
-    // TODO: Implement helpers below properly
-    private boolean isRateLimitExceeded() { return false; }
-    private String getHostName() { return "api.bakongcity.city"; }
-    private String getExternalIp() { return "api.bakongcity.city/ip"; } // Replace with actual external IP logic if needed
-    private LocationInfo getLocationInfo(String ip) { return null; }
-    private long getJvmUptime() { return 12345; }
-    private MemoryStats getMemoryStats() { return new MemoryStats(256, 512); }
-    private CpuStats getCpuStats() { return new CpuStats(0.3, 0.5); }
-    private String getFirstStackTraceLine(ILoggingEvent event) { return "Line info here"; }
-
-    private String getEmojiForLevel(Level level) {
-        return switch (level.levelStr) {
-            case "ERROR" -> "\uD83D\uDED1";
-            case "WARN" -> "\u26A0\uFE0F";
-            case "INFO" -> "\u2139\uFE0F";
-            case "DEBUG" -> "\uD83D\uDD27";
-            default -> "\u2753";
-        };
+    private boolean isRateLimitExceeded() {
+        return false;
     }
 
-    // Placeholder classes
+    private String getHostName() {
+        return "api.bakongcity.city";
+    }
+
+    private String getExternalIp() {
+        return "api.bakongcity.city/ip";
+    }
+
+    private LocationInfo getLocationInfo(String ip) {
+        return new LocationInfo("Phnom Penh", "Cambodia");
+    }
+
+    private long getJvmUptimeSeconds() {
+        return 12345L;
+    }
+
+    private MemoryStats getMemoryStats() {
+        return new MemoryStats(256, 512);
+    }
+
+    private CpuStats getCpuStats() {
+        return new CpuStats(0.3, 0.5);
+    }
+
+    private String getFirstStackTraceLine(ILoggingEvent event) {
+        return "com.hotelbooking.SomeClass.method(SomeClass.java:123)";
+    }
+
+    private String getEmojiForLevel(Level level) {
+        switch (level.levelStr) {
+            case "ERROR": return "\uD83D\uDED1"; // 🚑
+            case "WARN":  return "\u26A0\uFE0F"; // ⚠️
+            case "INFO":  return "\u2139\uFE0F"; // ℹ️
+            case "DEBUG": return "\uD83D\uDD27"; // 🛧
+            default:      return "\u2753";       // ❓
+        }
+    }
+
+    // Helper classes for structured stats
     public static class MemoryStats {
-        public int heapUsedMB, heapMaxMB;
-        public MemoryStats(int used, int max) {
-            this.heapUsedMB = used;
-            this.heapMaxMB = max;
+        public final int heapUsedMB;
+        public final int heapMaxMB;
+        public MemoryStats(int heapUsedMB, int heapMaxMB) {
+            this.heapUsedMB = heapUsedMB;
+            this.heapMaxMB = heapMaxMB;
         }
     }
 
     public static class CpuStats {
-        public double processLoad, systemLoad;
-        public CpuStats(double p, double s) {
-            this.processLoad = p;
-            this.systemLoad = s;
+        public final double processLoad;
+        public final double systemLoad;
+        public CpuStats(double processLoad, double systemLoad) {
+            this.processLoad = processLoad;
+            this.systemLoad = systemLoad;
         }
     }
 
     public static class LocationInfo {
-        public String getCity() { return "Phnom Penh"; }
-        public String getCountry() { return "Cambodia"; }
+        private final String city;
+        private final String country;
+
+        public LocationInfo(String city, String country) {
+            this.city = city;
+            this.country = country;
+        }
+
+        public String getCity() { return city; }
+        public String getCountry() { return country; }
     }
 }

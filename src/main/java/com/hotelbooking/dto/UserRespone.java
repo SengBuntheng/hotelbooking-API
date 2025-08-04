@@ -1,24 +1,31 @@
 package com.hotelbooking.dto;
 
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.persistence.Column;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
-import org.hibernate.query.sql.internal.ParameterRecognizerImpl;
 
+import java.sql.Timestamp;
 import java.util.UUID;
 
-@Builder
 @Getter
 @Setter
-@AllArgsConstructor
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 @ToString
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserRespone {
     private UUID uuid;
     private String firstName;
     private String lastName;
     private String email;
     private String phone;
+
+    private Timestamp createdAt;
+
     private String token;
+    private Timestamp tokenExp;
+
+    private Integer code;
+    private String message;
 }

@@ -1,6 +1,6 @@
 package com.hotelbooking.service.impl;
 
-import com.hotelbooking.Config.JwtUtils;
+import com.hotelbooking.Config.JwtService;
 import com.hotelbooking.Enum.VerificationResult;
 import com.hotelbooking.Repository.UserRepository;
 import com.hotelbooking.dto.LoginRequest;
@@ -9,6 +9,7 @@ import com.hotelbooking.GlobalException.OtpException;
 import com.hotelbooking.model.User;
 import com.hotelbooking.service.AuthService;
 import com.hotelbooking.service.EmailOtpService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -21,40 +22,35 @@ import static com.hotelbooking.service.handler.AuthHandlerService.mapToUserRespo
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
-    private final JwtUtils jwtUtils;
+    private final JwtService jwtService;
     private final EmailOtpService emailOtpService;
-
-    public AuthServiceImpl(AuthenticationManager authenticationManager,
-                           UserRepository userRepository,
-                           JwtUtils jwtUtils,
-                           EmailOtpService emailOtpService) {
-        this.authenticationManager = authenticationManager;
-        this.userRepository = userRepository;
-        this.jwtUtils = jwtUtils;
-        this.emailOtpService = emailOtpService;
-    }
 
     @Override
     public LoginResponse login(LoginRequest loginRequest) {
-        // ... (existing login logic)
         try {
             Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
+                    new UsernamePasswordAuthenticationToken(
+                            loginRequest.getEmail(),
+                            loginRequest.getPassword()
+                    )
             );
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            String token = jwtUtils.generateToken(loginRequest.getEmail());
             User user = userRepository.findByEmail(loginRequest.getEmail())
                     .orElseThrow(() -> new RuntimeException("User not found"));
+
+            String token = jwtService.generateToken(user.getEmail());
 
             LoginResponse response = new LoginResponse();
             response.setToken(token);
             response.setUser(mapToUserResponse(user));
             return response;
+
         } catch (Exception e) {
             log.error("Authentication failed for user: {}", loginRequest.getEmail(), e);
             throw new BadCredentialsException("Invalid credentials");
@@ -63,8 +59,8 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponse loginWithOtp(String email, String otp) {
-
         VerificationResult result = emailOtpService.verifyOtp(email, otp);
+
         if (!result.isValid()) {
             throw new OtpException("OTP verification failed: " + result.getStatus());
         }
@@ -72,8 +68,8 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found after OTP verification"));
 
+        String token = jwtService.generateToken(email);
 
-        String token = jwtUtils.generateToken(email);
         LoginResponse response = new LoginResponse();
         response.setToken(token);
         response.setUser(mapToUserResponse(user));

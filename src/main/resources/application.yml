@@ -96,7 +96,7 @@ spring:
       hibernate:
         format_sql: true
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
 
 springdoc:
   swagger-ui:
@@ -128,12 +128,27 @@ logging:
     com.sun.mail: DEBUG
     jakarta.mail: DEBUG
 
+aba:
+  public:
+    key: 6476968ca9018ec5a9b56da467fe6ee847cda6ff3
+  api: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/
+  merchant: ec461249
+  callback: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/purchase
+
+
 ---
 
 spring:
   config:
     activate:
       on-profile: dev
+    banner:
+      location: classpath:banner
+    security:
+      user:
+        name: admin
+        password: Sengbuntheng1
+
 
   datasource:
     url: jdbc:mysql://localhost:3306/hotelbooking_db_dev?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
@@ -159,13 +174,22 @@ spring:
           ssl.trust: smtp.gmail.com
         debug: true
 
+
+
+aba:
+  public:
+    key: 6476968ca9018ec5a9b56da467fe6ee847cda6ff3
+  api: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/
+  merchant: ec461249
+  callback: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/purchase
+
 ---
 
 spring:
   config:
     activate:
       on-profile: prod
-
+      banner.location: classpath:banner
   datasource:
     url: jdbc:mysql://mysql-1d18ad22-bunthengseng9-7dfc.f.aivencloud.com:17288/defaultdb?useSSL=true&sslMode=REQUIRED
     username: avnadmin
@@ -212,3 +236,9 @@ telegram:
     chat-id: ${TELEGRAM_ALERT_CHAT_ID}
     rate-limit: 5
     include-stacktrace: true
+aba:
+  public:
+    key: b7c231e372efb55a7a8f822d70353fa98f9db730
+  api: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/
+  merchant: ec460419
+  callback: http://localhost:8080/v1/aba/callback

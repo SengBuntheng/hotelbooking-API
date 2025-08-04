@@ -1,27 +1,29 @@
 package com.hotelbooking.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users", schema = "myapps")
 @Data
+@Getter
+@Setter
 @EqualsAndHashCode(callSuper = true)
 @ToString(exclude = {"bookings", "reviews"})
 public class User extends BaseEntity {
-
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
     @Column(name = "uuid", updatable = false, nullable = false, unique = true)
-    private UUID uuid = UUID.randomUUID();
+    private UUID uuid;
 
     @Column(name = "first_name", nullable = false)
     private String firstName;
@@ -38,6 +40,16 @@ public class User extends BaseEntity {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
+    @Column(name = "username", nullable = false, length = 50, unique = true)
+    private String username;
+
+    @Column(name = "exp_date")
+    private Timestamp expDate;
+
+    @CreationTimestamp
+    @Column(name = "cre_date", updatable = false)
+    private Timestamp createDate;
+
     @Transient
     private String token;
 
@@ -51,11 +63,11 @@ public class User extends BaseEntity {
     private List<Review> reviews;
 
     @PrePersist
-    public void prePersist() {
-        if (this.uuid == null) {
+    public void beforeSave() {
+        if (uuid == null) {
             this.uuid = UUID.randomUUID();
         }
+        long thirtyDaysInMillis = TimeUnit.DAYS.toMillis(30);
+        this.expDate = new Timestamp(System.currentTimeMillis() + thirtyDaysInMillis);
     }
-
-
 }

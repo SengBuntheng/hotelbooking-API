@@ -2,11 +2,6 @@ package com.hotelbooking.dto;
 
 
 import lombok.*;
-
-
-
-@AllArgsConstructor
-@Data
 @ToString
 @Getter
 @Setter
@@ -14,7 +9,6 @@ import lombok.*;
 public class LoginRequest {
     private String email;
     private String password;
-    private String otp;
 
 
 }
