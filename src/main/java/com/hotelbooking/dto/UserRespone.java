@@ -2,9 +2,9 @@ package com.hotelbooking.dto;
 
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.hotelbooking.model.User;
 import lombok.*;
 
+import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.UUID;
 
@@ -16,13 +16,14 @@ import java.util.UUID;
 @ToString
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserRespone {
+    private Long id;
     private UUID uuid;
     private String firstName;
     private String lastName;
     private String username;
     private String email;
     private String phone;
-
+    private Date Dob;
     private Timestamp createdAt;
 
     private String token;

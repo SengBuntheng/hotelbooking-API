@@ -1,17 +1,19 @@
 package com.hotelbooking.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hotelbooking.Repository.BookingRepository;
 import com.hotelbooking.dto.*;
+import com.hotelbooking.model.Booking;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -19,6 +21,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class ABAPayService {
@@ -38,11 +41,29 @@ public class ABAPayService {
     private String callbackUrl;
 
     private final SimpMessagingTemplate messagingTemplate;
+    private final BookingRepository bookingRepository;
 
-    public ABAPayService(SimpMessagingTemplate messagingTemplate) {
+    public ABAPayService(SimpMessagingTemplate messagingTemplate, BookingRepository bookingRepository) {
         this.messagingTemplate = messagingTemplate;
+        this.bookingRepository = bookingRepository;
     }
+    public String getQrImageBase64(double amount, String ccy, String txnId) {
+        try {
+            GenerateQrResponse exGenerateQrResponse = proceedQrRequest(amount, ccy, txnId);
+            if (exGenerateQrResponse == null || !exGenerateQrResponse.getStatus().getCode().equals("0")) {
+                logger.error("Failed to generate QR: {}",
+                        exGenerateQrResponse != null ? exGenerateQrResponse.getStatus().getMessage() : "No response");
+                throw new RuntimeException("Failed to generate QR code data.");
+            }
 
+            // The response from ABA includes the base64 data after the comma
+            return exGenerateQrResponse.getQrImage().split(",")[1];
+        } catch (Exception e) {
+            logger.error("Error generating QR image data: {}", e.getMessage(), e);
+            throw new RuntimeException("Error generating QR image data", e);
+        }
+    }
+    // This method is for getting the QR code image
     public ResponseEntity<byte[]> qrImage(double amount, String ccy, String txnId) {
         try {
             GenerateQrResponse exGenerateQrResponse = proceedQrRequest(amount, ccy, txnId);
@@ -65,6 +86,23 @@ public class ABAPayService {
         }
     }
 
+    // New method to get the payment URL
+    public String getPaymentUrl(double amount, String ccy, String txnId) {
+        try {
+            GenerateQrResponse exGenerateQrResponse = proceedQrRequest(amount, ccy, txnId);
+            if (exGenerateQrResponse == null || !exGenerateQrResponse.getStatus().getCode().equals("0")) {
+                logger.error("Failed to generate QR: {}",
+                        exGenerateQrResponse != null ? exGenerateQrResponse.getStatus().getMessage() : "No response");
+                throw new RuntimeException("Failed to get payment URL");
+            }
+            return exGenerateQrResponse.getAbapay_deeplink();
+        } catch (Exception e) {
+            logger.error("Error generating payment URL: {}", e.getMessage(), e);
+            throw new RuntimeException("Error generating payment URL", e);
+        }
+    }
+
+
     public void txnCallback(CallbackRequest request) {
         try {
             CheckTxnResponse checkTxnResponse = checkTransaction(request.getTran_id());
@@ -76,13 +114,24 @@ public class ABAPayService {
             }
 
             if (checkTxnResponse.getData() != null) {
-                switch (checkTxnResponse.getData().getPayment_status_code()) {
-                    case 0 -> sendPaymentStatus(request.getTran_id(), "SUCCESS");
-                    case 2 -> sendPaymentStatus(request.getTran_id(), "PENDING");
-                    case 3 -> sendPaymentStatus(request.getTran_id(), "DECLINED");
-                    case 4 -> sendPaymentStatus(request.getTran_id(), "REFUNDED");
-                    case 7 -> sendPaymentStatus(request.getTran_id(), "CANCELLED");
-                    default -> sendPaymentStatus(request.getTran_id(), "FAILED");
+                Optional<Booking> optionalBooking = bookingRepository.findById(Long.parseLong(request.getTran_id()));
+                if (optionalBooking.isPresent()) {
+                    Booking booking = optionalBooking.get();
+                    switch (checkTxnResponse.getData().getPayment_status_code()) {
+                        case 0:
+                            booking.setBookingStatus(com.hotelbooking.Enum.BookingStatus.CONFIRMED);
+                            sendPaymentStatus(request.getTran_id(), "SUCCESS");
+                            break;
+                        case 2:
+                            booking.setBookingStatus(com.hotelbooking.Enum.BookingStatus.IN_PROGRESS);
+                            sendPaymentStatus(request.getTran_id(), "PENDING");
+                            break;
+                        default:
+                            booking.setBookingStatus(com.hotelbooking.Enum.BookingStatus.CANCELLED);
+                            sendPaymentStatus(request.getTran_id(), "FAILED");
+                            break;
+                    }
+                    bookingRepository.save(booking);
                 }
             }
         } catch (Exception e) {
@@ -90,8 +139,6 @@ public class ABAPayService {
             sendPaymentStatus(request.getTran_id(), "FAIL, " + e.getMessage());
         }
     }
-
-    // ******************* Internal Helpers ********************
 
     private GenerateQrResponse proceedQrRequest(double amount, String ccy, String txnId) {
         try {

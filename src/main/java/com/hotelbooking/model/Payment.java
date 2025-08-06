@@ -1,40 +1,67 @@
 package com.hotelbooking.model;
 
-import com.hotelbooking.Enum.PaymentMethod;
 import com.hotelbooking.Enum.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
-@ToString
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @Entity
-@Table(name = "payment")
-public class Payment extends BaseEntity {
+@Table(name = "payments")
+public class Payment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
-    @Column(nullable = false)
+    private Long id;
+
+    @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
 
-    @Column(name = "payment_method", nullable = false)
-    private PaymentMethod paymentMethod;
+    @Column(nullable = false)
+    private String paymentMethod;
 
-    @Column(name = "payment_status", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private PaymentStatus paymentStatus;
 
-    @Column(name = "transaction_id", unique = true)
+    @Column(nullable = false, unique = true)
     private String transactionId;
 
-    @Column(name = "payment_date", nullable = false)
+    @Column(nullable = false)
+    private String qrCodeData; // Stores QR code image data or reference
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "booking_id", nullable = false)
+    private Booking booking;
+
+    @Column(nullable = false, length = 3)
+    private String currency;
+
+    @Column(nullable = false)
     private LocalDateTime paymentDate;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "booking_id", nullable = false, unique = true)
-    private Booking booking;
+    @Column(nullable = false)
+    private String createdBy;
+
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(nullable = false)
+    private String updatedBy;
+
+    @UpdateTimestamp
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
 }

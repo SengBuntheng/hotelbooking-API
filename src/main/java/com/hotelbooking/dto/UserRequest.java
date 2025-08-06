@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Column;
 import lombok.*;
 
+import java.sql.Date;
 import java.util.Locale;
 @Builder
 @Data
@@ -19,5 +20,6 @@ public class UserRequest {
     private String email;
     private String phone;
     private String password;
+    private Date dob;
 
 }

@@ -1,6 +1,5 @@
 package com.hotelbooking.service.impl;
 
-import com.hotelbooking.Config.JwtService;
 import com.hotelbooking.Repository.UserRepository;
 import com.hotelbooking.dto.UserRequest;
 import com.hotelbooking.dto.UserRespone;
@@ -10,8 +9,6 @@ import com.hotelbooking.service.handler.UserHandlerService;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -23,52 +20,48 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+public class UserserviceImpl implements UserService {
 
-public class UserserviceImpl implements UserService  {
-
-    @Autowired
-    UserRepository userRepository;
+    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserHandlerService userHandlerService;
     private final ModelMapper modelMapper;
-    private final JwtService jwtUtils;
-    private final AuthenticationManager authenticationManager;
-    @Autowired
 
-    public UserserviceImpl(UserRepository userRepository,
-                           PasswordEncoder passwordEncoder,
-                           UserHandlerService userHandlerService,
-                           ModelMapper modelMapper,
-                           JwtService jwtUtils,
-                           AuthenticationManager authenticationManager) {
+    public UserserviceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, UserHandlerService userHandlerService, ModelMapper modelMapper) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.userHandlerService = userHandlerService;
         this.modelMapper = modelMapper;
-        this.jwtUtils = jwtUtils;
-        this.authenticationManager = authenticationManager;
     }
 
     @Transactional
     @Override
     public UserRespone Create(UserRequest userRequest) {
+        // 1. Validate the user request first
         userHandlerService.validateUserRequest(userRequest);
+
+        // 2. Check if email or username already exist
+        if (userRepository.existsByEmail(userRequest.getEmail())) {
+            throw new IllegalArgumentException("Email already in use");
+        }
+        if (userRepository.existsByUsername(userRequest.getUsername())) {
+            throw new IllegalArgumentException("Username already in use");
+        }
+
+        // 3. Map the request to a User entity
         User user = modelMapper.map(userRequest, User.class);
         user.setPasswordHash(passwordEncoder.encode(userRequest.getPassword()));
         user.setUuid(UUID.randomUUID());
-        user.setActive(true);
+        user.setRole(User.Role.USER);
         user.setCreatedBy("SYSTEM");
-        String token = jwtUtils.generateToken(user.getEmail());
+
+        // 4. Set user as inactive until they verify their email
+        user.setActive(false);
+
+        // 5. Save the new user to the database
         User savedUser = userRepository.save(user);
-        if(userRepository.existsByEmail(user.getEmail())) {
-            throw  new IllegalArgumentException("Email already in use");
-        }
-        if(userRepository.existsByUsername(userRequest.getUsername())) {
-            throw  new IllegalArgumentException("Username already in use");
-        }
-        userHandlerService.validateUserRequest(userRequest);
 
-
+        // 6. Return a response without a token
         return UserRespone.builder()
                 .uuid(savedUser.getUuid())
                 .firstName(savedUser.getFirstName())
@@ -77,13 +70,18 @@ public class UserserviceImpl implements UserService  {
                 .email(savedUser.getEmail())
                 .phone(savedUser.getPhone())
                 .createdAt(savedUser.getCreateDate())
-                .token(token)
-                .tokenExp(new Timestamp(jwtUtils.extractExpiration(token).getTime()))
-                .code(200)
-                .message("User created successfully")
+                .code(201)
+                .message("User registered successfully. Please verify your email.")
                 .build();
     }
 
+    @Override
+    public void activateUser(String email) {
+        userRepository.findByEmail(email).ifPresent(user -> {
+            user.setActive(true);
+            userRepository.save(user);
+        });
+    }
 
     @Override
     public UserRespone Update(User user) {
@@ -124,13 +122,6 @@ public class UserserviceImpl implements UserService  {
         return userRepository.findByEmail(email).isPresent();
     }
 
-    @Override
-    public void activateUser(String email) {
-        userRepository.findByEmail(email).ifPresent(user -> {
-            user.setActive(true);
-            userRepository.save(user);
-        });
-    }
 
     public User findbyemail(String em) {
         return userRepository.findByEmail(em).orElse(null);

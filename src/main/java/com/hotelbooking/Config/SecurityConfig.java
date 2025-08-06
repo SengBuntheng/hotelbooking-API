@@ -33,17 +33,14 @@ public class SecurityConfig {
     private final JwtFilter jwtFilter;
     private final UserDetailsService userDetailsService;
 
-    // List of public endpoints
+    // CORRECTED: Only truly public endpoints are listed here.
     private static final String[] PUBLIC_ENDPOINTS = {
-            "v1/auth/**",
-            "/v1/auth/**",
-            "/actuator/health",
-            "/v1/aba/**",
-            "/ws-payment/**",
-            "/swagger-ui/**",
-            "/v3/api-docs/**",
-            "/swagger-resources/**",
-            "/webjars/**"
+            "/v1/auth/**",          // For login, register, verify, etc.
+            "/v1/aba/callback",     // For the payment callback from ABA
+            "/ws-payment/**",       // For the WebSocket connection
+            "/swagger-ui/**",       // For API documentation
+            "/v3/api-docs/**",      // For API documentation
+            "/actuator/health"      // For health checks
     };
 
     @Bean
@@ -53,7 +50,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                        .anyRequest().authenticated()
+                        .anyRequest().authenticated() // All other requests will now require a token
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -86,26 +83,13 @@ public class SecurityConfig {
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
-                "http://127.0.0.1:5500",  // React
-                "http://localhost:4200",  // Angular
-                "http://localhost:8080"   // For testing
+                "http://127.0.0.1:5500" // Your frontend origin
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList(
-                "Authorization",
-                "Content-Type",
-                "X-Requested-With",
-                "Accept",
-                "Origin",
-                "Access-Control-Request-Method",
-                "Access-Control-Request-Headers"
-        ));
-        configuration.setExposedHeaders(List.of(
-                "Authorization",
-                "Content-Disposition"
+                "Authorization", "Content-Type"
         ));
         configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -29,15 +30,16 @@ public class JwtFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
-        final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String username;
 
-        // Skip JWT filter for authentication and public endpoints
+        // Skip JWT filter for public endpoints
         if (isPublicEndpoint(request)) {
             filterChain.doFilter(request, response);
             return;
         }
+
+        final String authHeader = request.getHeader("Authorization");
+        final String jwt;
+        final String username;
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             sendUnauthorizedError(response, "Missing or invalid Authorization header");
@@ -46,7 +48,6 @@ public class JwtFilter extends OncePerRequestFilter {
 
         jwt = authHeader.substring(7);
 
-        // Check if token is empty or doesn't contain at least one dot
         if (jwt.isEmpty() || jwt.split("\\.").length < 3) {
             sendUnauthorizedError(response, "Invalid JWT token format");
             return;
@@ -73,11 +74,15 @@ public class JwtFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+    // *** THIS IS THE CORRECTED METHOD ***
     private boolean isPublicEndpoint(HttpServletRequest request) {
         String path = request.getServletPath();
-        return path.startsWith("/api/v1/auth/") ||
+        // Ensure this matches the public endpoints in your SecurityConfig
+        return path.startsWith("/v1/auth/") ||
                 path.startsWith("/actuator/") ||
                 path.startsWith("/v1/aba/") ||
+                path.startsWith("/swagger-ui/") ||
+                path.startsWith("/v3/api-docs/") ||
                 path.startsWith("/ws-payment/");
     }
 
