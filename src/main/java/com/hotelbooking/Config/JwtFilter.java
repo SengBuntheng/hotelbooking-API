@@ -15,6 +15,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 @Slf4j
 @Component
@@ -24,6 +26,16 @@ public class JwtFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
 
+    // Define the public paths here
+    private final List<String> publicPaths = Arrays.asList(
+            "/v1/auth",
+            "/v1/aba/callback",
+            "/ws-payment",
+            "/swagger-ui",
+            "/v3/api-docs",
+            "/actuator/health"
+    );
+
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
@@ -31,7 +43,7 @@ public class JwtFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        // Skip JWT filter for public endpoints
+        // Check if the request path is public
         if (isPublicEndpoint(request)) {
             filterChain.doFilter(request, response);
             return;
@@ -48,14 +60,8 @@ public class JwtFilter extends OncePerRequestFilter {
 
         jwt = authHeader.substring(7);
 
-        if (jwt.isEmpty() || jwt.split("\\.").length < 3) {
-            sendUnauthorizedError(response, "Invalid JWT token format");
-            return;
-        }
-
         try {
             username = jwtService.extractUsername(jwt);
-
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
                 if (jwtService.validateToken(jwt, userDetails)) {
@@ -66,7 +72,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 }
             }
         } catch (Exception e) {
-            log.error("JWT processing error", e);
+            log.error("JWT processing error: {}", e.getMessage());
             sendUnauthorizedError(response, "Invalid JWT token");
             return;
         }
@@ -74,16 +80,10 @@ public class JwtFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    // *** THIS IS THE CORRECTED METHOD ***
+    // CORRECTED: This method now correctly checks if the request path starts with any of the defined public paths.
     private boolean isPublicEndpoint(HttpServletRequest request) {
         String path = request.getServletPath();
-        // Ensure this matches the public endpoints in your SecurityConfig
-        return path.startsWith("/v1/auth/") ||
-                path.startsWith("/actuator/") ||
-                path.startsWith("/v1/aba/") ||
-                path.startsWith("/swagger-ui/") ||
-                path.startsWith("/v3/api-docs/") ||
-                path.startsWith("/ws-payment/");
+        return publicPaths.stream().anyMatch(path::startsWith);
     }
 
     private void setAuthenticationInContext(HttpServletRequest request, UserDetails userDetails) {

@@ -40,8 +40,12 @@ public class SecurityConfig {
             "/ws-payment/**",       // For the WebSocket connection
             "/swagger-ui/**",       // For API documentation
             "/v3/api-docs/**",      // For API documentation
-            "/actuator/health"      // For health checks
+            "/actuator/health",      // For health checks
+            "/v1/bookings/**"
+
     };
+
+
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -83,7 +87,7 @@ public class SecurityConfig {
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
-                "http://127.0.0.1:5500" // Your frontend origin
+                "http://127.0.0.1:5500"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList(

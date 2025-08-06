@@ -77,6 +77,7 @@ public class AuthServiceImpl implements AuthService {
 
     private UserRespone mapToUserResponse(User user) {
         return UserRespone.builder()
+                .id(user.getId()) // <-- ADD THIS LINE
                 .uuid(user.getUuid())
                 .email(user.getEmail())
                 .firstName(user.getFirstName())
