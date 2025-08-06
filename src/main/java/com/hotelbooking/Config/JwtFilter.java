@@ -64,8 +64,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 }
             }
         } catch (Exception e) {
-            // Log the error but don't stop the filter chain.
-            // This allows for clearer error handling downstream.
+
             log.error("JWT Token processing error: {}", e.getMessage());
         }
 
