@@ -33,14 +33,13 @@ public class SecurityConfig {
     private final JwtFilter jwtFilter;
     private final UserDetailsService userDetailsService;
 
-    // CORRECTED: Only truly public endpoints are listed here.
     private static final String[] PUBLIC_ENDPOINTS = {
-            "/v1/auth/**",          // For login, register, verify, etc.
-            "/v1/aba/callback",     // For the payment callback from ABA
-            "/ws-payment/**",       // For the WebSocket connection
-            "/swagger-ui/**",       // For API documentation
-            "/v3/api-docs/**",      // For API documentation
-            "/actuator/health",      // For health checks
+            "/v1/auth/**",
+            "/v1/aba/callback",
+            "/ws-payment/**",
+            "/swagger-ui/**",
+            "/v3/api-docs/**",
+            "/actuator/health",
             "/v1/bookings/**"
 
     };
@@ -87,7 +86,8 @@ public class SecurityConfig {
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
-                "http://127.0.0.1:5500"
+                "http://127.0.0.1:5500",
+                "http://localhost:5500"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList(

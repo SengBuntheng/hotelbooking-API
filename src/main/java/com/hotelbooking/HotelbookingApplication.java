@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 public class HotelbookingApplication {
 
     public static void main(String[] args) {
+
         SpringApplication.run(HotelbookingApplication.class, args);
     }
 
