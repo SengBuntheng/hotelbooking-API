@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/v1/users")
 public class UserController {
@@ -44,7 +44,7 @@ public class UserController {
         user.setLastName(userRequest.getLastName());
         user.setPhone(userRequest.getPhone());
 
-        UserRespone updatedUser = userService.Update(user);
+        UserRespone updatedUser = userService.Update(id, userRequest);
         if (updatedUser != null) {
             return ResponseEntity.ok(updatedUser);
         }

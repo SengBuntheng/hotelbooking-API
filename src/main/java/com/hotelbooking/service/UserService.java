@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 @Service
 public interface UserService {
     UserRespone Create(UserRequest userRequest);
-    UserRespone Update(User user);
+    UserRespone Update(Long id , UserRequest userRequest);
     UserRespone Delete(User user);
     UserRespone findbyid(Long id);
     List<UserRespone> findAll();

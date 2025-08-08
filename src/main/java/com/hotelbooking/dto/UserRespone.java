@@ -25,12 +25,16 @@ public class UserRespone {
     private String phone;
     private Date Dob;
     private Timestamp createdAt;
-
+    private Timestamp updatedAt;
+    private String createdBy;
+    private String updatedBy;
+    private Boolean active;
+    private String role;
+    private String password;
+    private Timestamp lastLogin;
     private String token;
     private Timestamp tokenExp;
-
     private Integer code;
     private String message;
-
 
 }

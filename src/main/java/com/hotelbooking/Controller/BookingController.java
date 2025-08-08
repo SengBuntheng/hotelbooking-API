@@ -6,7 +6,7 @@ import com.hotelbooking.service.ABAPayService;
 import com.hotelbooking.service.BookingService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/v1/bookings")
 public class BookingController {

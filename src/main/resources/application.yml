@@ -50,7 +50,7 @@ springdoc:
 
 app:
   jwt:
-    secret: 8b9DNGMLqHW0EfzwZluRmx4cie6gKFrp
+    secret: NjdBNkQ5NkE0RjM4NTI2QjU3NTM4N0E1REI0MTM2NzQ1QzU5NEU1NzI0NDU1MDYxNDE0NDIzMjM0MzUzMDM1Mw==
     expiration-ms: 86400000
   otp:
     expiration:

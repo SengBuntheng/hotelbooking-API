@@ -40,7 +40,8 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/v3/api-docs/**",
             "/actuator/health",
-            "/v1/bookings/**"
+            "/v1/bookings/**",
+            "v1/user/**"
 
     };
 
@@ -53,6 +54,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                        .requestMatchers("/**").permitAll()
                         .anyRequest().authenticated() // All other requests will now require a token
                 )
                 .sessionManagement(session -> session
@@ -86,7 +88,7 @@ public class SecurityConfig {
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
-                "http://127.0.0.1:5500",
+                "http://127.0.0.1:5501",
                 "http://localhost:5500"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));

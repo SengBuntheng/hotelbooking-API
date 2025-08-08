@@ -1,5 +1,6 @@
 package com.hotelbooking.service.impl;
 
+import com.hotelbooking.Constant.Constant;
 import com.hotelbooking.Repository.UserRepository;
 import com.hotelbooking.dto.UserRequest;
 import com.hotelbooking.dto.UserRespone;
@@ -12,9 +13,9 @@ import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -37,10 +38,8 @@ public class UserserviceImpl implements UserService {
     @Transactional
     @Override
     public UserRespone Create(UserRequest userRequest) {
-        // 1. Validate the user request first
         userHandlerService.validateUserRequest(userRequest);
 
-        // 2. Check if email or username already exist
         if (userRepository.existsByEmail(userRequest.getEmail())) {
             throw new IllegalArgumentException("Email already in use");
         }
@@ -48,31 +47,16 @@ public class UserserviceImpl implements UserService {
             throw new IllegalArgumentException("Username already in use");
         }
 
-        // 3. Map the request to a User entity
         User user = modelMapper.map(userRequest, User.class);
         user.setPasswordHash(passwordEncoder.encode(userRequest.getPassword()));
         user.setUuid(UUID.randomUUID());
         user.setRole(User.Role.USER);
-        user.setCreatedBy("SYSTEM");
-
-        // 4. Set user as inactive until they verify their email
+        user.setCreatedBy(Constant.SYSTEM);
         user.setActive(false);
 
-        // 5. Save the new user to the database
         User savedUser = userRepository.save(user);
 
-        // 6. Return a response without a token
-        return UserRespone.builder()
-                .uuid(savedUser.getUuid())
-                .firstName(savedUser.getFirstName())
-                .lastName(savedUser.getLastName())
-                .username(savedUser.getUsername())
-                .email(savedUser.getEmail())
-                .phone(savedUser.getPhone())
-                .createdAt(savedUser.getCreateDate())
-                .code(201)
-                .message("User registered successfully. Please verify your email.")
-                .build();
+        return userHandlerService.ConvertUserToUserResponse(savedUser);
     }
 
     @Override
@@ -84,36 +68,50 @@ public class UserserviceImpl implements UserService {
     }
 
     @Override
-    public UserRespone Update(User user) {
-        return userRepository.findById(user.getId())
-                .map(existingUser -> {
-                    existingUser.setFirstName(user.getFirstName());
-                    existingUser.setLastName(user.getLastName());
-                    existingUser.setPhone(user.getPhone());
-                    existingUser.setUpdatedAt(LocalDateTime.now());
-                    User updatedUser = userRepository.save(existingUser);
-                    return modelMapper.map(updatedUser, UserRespone.class);
-                })
-                .orElse(null);
+    public UserRespone Update(Long id, UserRequest userRequest) {
+        Optional<User> userOptional = userRepository.findById(id);
+        if (userOptional.isEmpty()) {
+            throw new IllegalArgumentException("User not found with id: " + id);
+        }
+
+        User userUpdated = userOptional.get();
+        userUpdated.setFirstName(userRequest.getFirstName());
+        userUpdated.setLastName(userRequest.getLastName());
+        userUpdated.setPhone(userRequest.getPhone());
+        userUpdated.setUpdatedAt(LocalDateTime.now());
+        userUpdated.setUpdatedBy(Constant.SYSTEM);
+
+        // Only update the password if a new one is provided
+        if (userRequest.getPassword() != null && !userRequest.getPassword().isEmpty()) {
+            userUpdated.setPasswordHash(passwordEncoder.encode(userRequest.getPassword()));
+        }
+
+        User savedUser = userRepository.save(userUpdated);
+        log.info("User with id {} updated successfully", id);
+
+        return userHandlerService.ConvertUserToUserResponse(savedUser);
     }
+
     @Override
     public UserRespone Delete(User user) {
-        return null;
+        userRepository.delete(user);
+        return userHandlerService.ConvertUserToUserResponse(user);
     }
 
     @Override
     public UserRespone findbyid(Long id) {
-        return userRepository.findById(id)
-                .map(user -> modelMapper.map(user, UserRespone.class))
-                .orElse(null);
-
+        Optional<User> user = userRepository.findById(id);
+        if (user.isEmpty()) {
+            throw new IllegalArgumentException("User not found with id: " + id);
+        }
+        return userHandlerService.ConvertUserToUserResponse(user.get());
     }
 
     @Override
     public List<UserRespone> findAll() {
         return userRepository.findAll()
                 .stream()
-                .map(user -> modelMapper.map(user, UserRespone.class))
+                .map(userHandlerService::ConvertUserToUserResponse)
                 .collect(Collectors.toList());
     }
 
@@ -122,9 +120,7 @@ public class UserserviceImpl implements UserService {
         return userRepository.findByEmail(email).isPresent();
     }
 
-
     public User findbyemail(String em) {
         return userRepository.findByEmail(em).orElse(null);
-
-    };
+    }
 }

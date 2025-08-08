@@ -33,30 +33,28 @@ public class AuthServiceImpl implements AuthService {
     @Transactional(readOnly = true)
     public LoginResponse login(AuthenticationRequest authenticationRequest) {
         try {
-            // 1. Find the user by email
+
             User user = userRepository.findByEmail(authenticationRequest.getEmail())
                     .orElseThrow(() -> new OtpException.AuthenticationFailedException("Check credentials"));
 
-            // 2. Check if the account is active
+
             if (!user.getActive()) {
                 throw new OtpException.AuthenticationFailedException("Account is not active. Please verify your email.");
             }
 
-            // 3. Manually check if the provided password matches the stored hashed password
             if (!passwordEncoder.matches(authenticationRequest.getPassword(), user.getPasswordHash())) {
                 throw new OtpException.AuthenticationFailedException("Check credentials");
             }
 
-            // 4. If password is correct, generate JWT token
+
             String token = jwtService.generateToken(user.getEmail());
             updateLastLogin(user);
 
-            // 5. Return the successful response
             return buildLoginResponse(user, token);
 
         } catch (Exception e) {
             log.error("Authentication failed for email: {}: {}", authenticationRequest.getEmail(), e.getMessage());
-            // Rethrow the specific exception to be handled by the controller
+
             throw new OtpException.AuthenticationFailedException(e.getMessage());
         }
     }
@@ -77,7 +75,7 @@ public class AuthServiceImpl implements AuthService {
 
     private UserRespone mapToUserResponse(User user) {
         return UserRespone.builder()
-                .id(user.getId()) // <-- ADD THIS LINE
+                .id(user.getId())
                 .uuid(user.getUuid())
                 .email(user.getEmail())
                 .firstName(user.getFirstName())
