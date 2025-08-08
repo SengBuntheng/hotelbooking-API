@@ -26,8 +26,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: userstmp36
-    password: gwfo uayv dvsm frer
+    username: 
+    password: 
     protocol: smtp
     properties:
       mail:
@@ -77,7 +77,7 @@ aba:
     key: 6476968ca9018ec5a9b56da467fe6ee847cda6ff
   merchant: ec461249
   api: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/
-  callback: https://http://127.0.0.1:5500/v1/aba/callback # Replace with your actual public callback URL
+  callback: https://http://127.0.0.1:5500/v1/aba/callback 
 
 ---
 
@@ -124,10 +124,9 @@ spring:
       on-profile: prod
 
   datasource:
-    url: jdbc:mysql://mysql-1d18ad22-bunthengseng9-7dfc.f.aivencloud.com:17288/defaultdb?useSSL=true&sslMode=REQUIRED
-    username: avnadmin
-    password: AVNS_XnbWgpJfp01ff59Abur
-
+    url: 
+    username: 
+    password: 
   mail:
     host: smtp.gmail.com
     port: 587
@@ -153,10 +152,6 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
 
-  security:
-    user:
-      name: admin
-      password: Sengbuntheng1  # same decoded password here, adjust if needed
 
 logging:
   config: classpath:logback-spring-prod.xml
