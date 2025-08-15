@@ -43,6 +43,7 @@ public class JwtFilter extends OncePerRequestFilter {
             return;
         }
 
+
         final String jwt = authHeader.substring(7);
         final String username;
 

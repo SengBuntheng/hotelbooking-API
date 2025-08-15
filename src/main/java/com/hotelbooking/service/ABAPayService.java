@@ -62,6 +62,7 @@ public class ABAPayService {
             logger.error("Error generating QR image data: {}", e.getMessage(), e);
             throw new RuntimeException("Error generating QR image data", e);
         }
+
     }
     // This method is for getting the QR code image
     public ResponseEntity<byte[]> qrImage(double amount, String ccy, String txnId) {

@@ -173,7 +173,10 @@ telegram:
     chat-id: ${TELEGRAM_ALERT_CHAT_ID}
     rate-limit: 5
     include-stacktrace: true
-
+app:
+  jwt:
+    secret: NjdBNkQ5NkE0RjM4NTI2QjU3NTM4N0E1REI0MTM2NzQ1QzU5NEU1NzI0NDU1MDYxNDE0NDIzMjM0MzUzMDM1Mw==
+    expiration-ms: 86400000
 aba:
   public:
     key: 6476968ca9018ec5a9b56da467fe6ee847cda6ff
