@@ -118,15 +118,19 @@ spring:
 
 ---
 
+
 spring:
   config:
     activate:
       on-profile: prod
 
   datasource:
-    url: 
-    username: 
-    password: 
+    # CORRECTED: The URL must start with jdbc:mysql://
+    url: jdbc:mysql://avnadmin:AVNS_XnbWgpJfp01ff59Abur@mysql-1d18ad22-bunthengseng9-7dfc.f.aivencloud.com:17288/defaultdb?ssl-mode=REQUIRED
+    username: avnadmin
+    password: AVNS_XnbWgpJfp01ff59Abur
+
+  # ... (rest of your prod configuration)
   mail:
     host: smtp.gmail.com
     port: 587
