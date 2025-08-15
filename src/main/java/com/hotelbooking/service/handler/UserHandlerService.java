@@ -41,7 +41,12 @@ public class UserHandlerService {
 
         return hasLetter && hasDigit;
     }
+    public void validationPasswrod(String password) {
 
+        if (password.isEmpty()) {
+            log.error("Password cannot be empty");
+        }
+    }
     public UserRespone ConvertUserToUserResponse(User user) {
         UserRespone userResponse = new UserRespone();
         userResponse.setId(user.getId());
@@ -73,5 +78,7 @@ public class UserHandlerService {
 
         return userResponse;
     }
+
+
 
 }

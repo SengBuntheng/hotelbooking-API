@@ -8,6 +8,8 @@ import com.hotelbooking.model.Room;
 import com.hotelbooking.model.User;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class BookingService {
 
@@ -32,7 +34,11 @@ public class BookingService {
         booking.setUser(user);
         booking.setRoom(room);
 
-        // 4. Save the booking
+
         return bookingRepository.save(booking);
     }
+   public List<Booking> getAllBookings() {
+        return bookingRepository.findAll();
+    }
+
 }

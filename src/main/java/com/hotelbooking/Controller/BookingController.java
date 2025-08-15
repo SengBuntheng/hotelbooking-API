@@ -6,6 +6,9 @@ import com.hotelbooking.service.ABAPayService;
 import com.hotelbooking.service.BookingService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
 @CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/v1/bookings")
@@ -37,5 +40,11 @@ public class BookingController {
 
         // 4. Return the response
         return ResponseEntity.ok(response);
+    }
+
+     @GetMapping
+    public ResponseEntity<List<Booking>> getAllBookings() {
+        List<Booking> bookings = bookingService.getAllBookings();
+        return ResponseEntity.ok(bookings);
     }
 }

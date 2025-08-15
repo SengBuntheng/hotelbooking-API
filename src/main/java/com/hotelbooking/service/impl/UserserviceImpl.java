@@ -1,6 +1,7 @@
 package com.hotelbooking.service.impl;
 
 import com.hotelbooking.Constant.Constant;
+import com.hotelbooking.Enum.UserRole;
 import com.hotelbooking.Repository.UserRepository;
 import com.hotelbooking.dto.UserRequest;
 import com.hotelbooking.dto.UserRespone;
@@ -39,7 +40,7 @@ public class UserserviceImpl implements UserService {
     @Override
     public UserRespone Create(UserRequest userRequest) {
         userHandlerService.validateUserRequest(userRequest);
-
+        userHandlerService.validationPasswrod(userRequest.getPassword());
         if (userRepository.existsByEmail(userRequest.getEmail())) {
             throw new IllegalArgumentException("Email already in use");
         }
@@ -50,7 +51,7 @@ public class UserserviceImpl implements UserService {
         User user = modelMapper.map(userRequest, User.class);
         user.setPasswordHash(passwordEncoder.encode(userRequest.getPassword()));
         user.setUuid(UUID.randomUUID());
-        user.setRole(User.Role.USER);
+        user.setRole(UserRole.ADMIN);
         user.setCreatedBy(Constant.SYSTEM);
         user.setActive(false);
 

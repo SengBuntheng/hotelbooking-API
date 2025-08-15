@@ -3,6 +3,7 @@ package com.hotelbooking.Controller;
 import com.hotelbooking.dto.HotelImageDto;
 import com.hotelbooking.service.HotelImageService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,7 +19,7 @@ public class HotelImageController {
         this.hotelImageService = hotelImageService;
     }
 
-    @PostMapping
+    @PostMapping()
     public ResponseEntity<HotelImageDto> createHotelImage(@RequestBody HotelImageDto hotelImageDto) {
         return new ResponseEntity<>(hotelImageService.createHotelImage(hotelImageDto), HttpStatus.CREATED);
     }

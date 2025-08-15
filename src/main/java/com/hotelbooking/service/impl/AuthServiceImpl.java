@@ -25,7 +25,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final JwtService jwtService;
-    private final PasswordEncoder passwordEncoder; // Use this for checking passwords
+    private final PasswordEncoder passwordEncoder;
     private final EmailOtpService emailOtpService;
 
 
@@ -87,7 +87,6 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponse loginWithOtp(String email, String otp) {
-        // This method remains correct and does not need changes
         try {
             if (!emailOtpService.verifyOtp(email, otp).isValid()) {
                 throw new OtpException.OtpVerificationException("OTP verification failed");

@@ -1,5 +1,6 @@
 package com.hotelbooking.model;
 
+import com.hotelbooking.Enum.UserRole;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -61,11 +62,7 @@ public class User extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
-    private Role role;
-
-    public enum Role {
-        ADMIN, USER
-    }
+    private UserRole role;
 
     @Transient
     private String token;
