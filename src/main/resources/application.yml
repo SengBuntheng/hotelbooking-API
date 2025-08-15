@@ -74,10 +74,11 @@ logging:
 
 aba:
   public:
-    key: 6476968ca9018ec5a9b56da467fe6ee847cda6ff
-  merchant: ec461249
-  api: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/
-  callback: https://http://127.0.0.1:5500/v1/aba/callback 
+    key: cd8c44212e596a0c4ff91c1fa85fae5dd66a944c
+  merchant: ec461441
+  api: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/purchase
+  callback: https://http://127.0.0.1:5500/v1/aba/callback
+
 
 ---
 
@@ -179,9 +180,9 @@ app:
     expiration-ms: 86400000
 aba:
   public:
-    key: 6476968ca9018ec5a9b56da467fe6ee847cda6ff
-  merchant: ec461249
-  api: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/
+    key: cd8c44212e596a0c4ff91c1fa85fae5dd66a944c
+  merchant: ec461441
+  api: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/purchase
   callback: https://http://127.0.0.1:5500/v1/aba/callback
 
 
