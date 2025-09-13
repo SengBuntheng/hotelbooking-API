@@ -9,5 +9,6 @@ public interface Constant {
    String SYSTEM = "SYSTEM";
    String Success = "Success";
    String Failure = "Failure";
+   String ADMIN = "ADMIN";
 
 }

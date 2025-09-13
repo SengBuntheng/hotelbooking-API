@@ -26,10 +26,10 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<ApiResponse> register(@Valid @RequestBody UserRequest userRequest) {
         try {
-            // 1. Create the user (inactive by default)
+
             userService.Create(userRequest);
 
-            // 2. Send OTP to the user's email
+
             emailOtpService.sendOtp(userRequest.getEmail());
 
             return ResponseEntity.status(HttpStatus.CREATED)
@@ -45,13 +45,13 @@ public class AuthController {
         }
     }
 
+
     @PostMapping("/verify")
     public ResponseEntity<ApiResponse> verify(@Valid @RequestBody OtpVerificationRequest request) {
         try {
             VerificationResult result = emailOtpService.verifyOtp(request.getEmail(), request.getOtp());
 
             if (result.isValid()) {
-                // If OTP is valid, activate the user's account
                 userService.activateUser(request.getEmail());
                 return ResponseEntity.ok(new ApiResponse(true, "Account activated successfully. You can now log in."));
             } else {
@@ -80,4 +80,6 @@ public class AuthController {
                     .body(AuthenticationResponse.builder().success(false).message(e.getMessage()).build());
         }
     }
+
+
 }

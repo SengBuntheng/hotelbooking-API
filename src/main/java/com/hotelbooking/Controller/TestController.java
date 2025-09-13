@@ -25,4 +25,11 @@ public class TestController {
         logger.info("Test INFO log from /info endpoint");
         return "Logged info!";
     }
+
+
+    @PostMapping(value = "/payload" , consumes = "application/xml", produces = "application/xml")
+    public String receivePayload(@RequestBody String payload) {
+        logger.info("Received payload: {}", payload);
+        return "Payload received!";
+    }
 }

@@ -17,13 +17,13 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Example: give all users "USER" role
         return Collections.singleton(() -> "ROLE_USER");
     }
 
     @Override
     public String getPassword() {
-        return user.getPasswordHash();  // or however your User stores password
+        return user.getPasswordHash();
+
     }
 
     @Override
@@ -33,12 +33,14 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public boolean isAccountNonExpired() {
-        return true; // or add your own logic
+        return true;
+
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        return user.getActive(); // example
+        return user.getActive();
+
     }
 
     @Override

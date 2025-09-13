@@ -14,7 +14,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
-
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.time.LocalDateTime;
@@ -47,6 +46,7 @@ public class ABAPayService {
         this.messagingTemplate = messagingTemplate;
         this.bookingRepository = bookingRepository;
     }
+
     public String getQrImageBase64(double amount, String ccy, String txnId) {
         try {
             GenerateQrResponse exGenerateQrResponse = proceedQrRequest(amount, ccy, txnId);
@@ -56,15 +56,13 @@ public class ABAPayService {
                 throw new RuntimeException("Failed to generate QR code data.");
             }
 
-            // The response from ABA includes the base64 data after the comma
             return exGenerateQrResponse.getQrImage().split(",")[1];
         } catch (Exception e) {
             logger.error("Error generating QR image data: {}", e.getMessage(), e);
             throw new RuntimeException("Error generating QR image data", e);
         }
-
     }
-    // This method is for getting the QR code image
+
     public ResponseEntity<byte[]> qrImage(double amount, String ccy, String txnId) {
         try {
             GenerateQrResponse exGenerateQrResponse = proceedQrRequest(amount, ccy, txnId);
@@ -87,7 +85,6 @@ public class ABAPayService {
         }
     }
 
-    // New method to get the payment URL
     public String getPaymentUrl(double amount, String ccy, String txnId) {
         try {
             GenerateQrResponse exGenerateQrResponse = proceedQrRequest(amount, ccy, txnId);
@@ -102,7 +99,6 @@ public class ABAPayService {
             throw new RuntimeException("Error generating payment URL", e);
         }
     }
-
 
     public void txnCallback(CallbackRequest request) {
         try {
@@ -159,7 +155,6 @@ public class ABAPayService {
 
             return requestQr(requestBody);
         } catch (Exception e) {
-            logger.error("Error processing QR request: {}", e.getMessage(), e);
             throw new RuntimeException(e);
         }
     }
@@ -168,14 +163,19 @@ public class ABAPayService {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             String json = objectMapper.writeValueAsString(request);
+            // Append the correct path to the baseUrl
             HttpResponse<String> response = Unirest.post(baseUrl + "generate-qr")
                     .header("Content-Type", "application/json")
                     .body(json)
                     .asString();
 
-            return objectMapper.readValue(response.getBody(), GenerateQrResponse.class);
+            if (response.getStatus() == 200 && response.getBody() != null && response.getBody().trim().startsWith("{")) {
+                return objectMapper.readValue(response.getBody(), GenerateQrResponse.class);
+            } else {
+                logger.error("Failed to get a valid JSON response from ABA PAY API. Status: {}, Body: {}", response.getStatus(), response.getBody());
+                throw new RuntimeException("Received an invalid response from the payment gateway.");
+            }
         } catch (Exception e) {
-            logger.error("Error requesting QR: {}", e.getMessage(), e);
             throw new RuntimeException(e);
         }
     }
@@ -192,6 +192,7 @@ public class ABAPayService {
             ObjectMapper objectMapper = new ObjectMapper();
             String json = objectMapper.writeValueAsString(request);
 
+            // Append the correct path to the baseUrl
             HttpResponse<String> response = Unirest.post(baseUrl + "check-transaction-2")
                     .header("Content-Type", "application/json")
                     .body(json)
@@ -237,7 +238,6 @@ public class ABAPayService {
                 request.getTran_id() + request.getAmount() +
                 request.getItems() + request.getFirst_name() +
                 request.getLast_name() + request.getEmail() +
-
                 request.getPhone() + request.getPurchase_type() +
                 request.getPayment_option() + request.getCallback_url() +
                 request.getReturn_deeplink() + request.getCurrency() +
@@ -262,4 +262,6 @@ public class ABAPayService {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
         return now.format(formatter);
     }
+
+
 }

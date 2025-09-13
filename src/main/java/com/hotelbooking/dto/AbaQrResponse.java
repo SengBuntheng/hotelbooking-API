@@ -10,4 +10,6 @@ public class AbaQrResponse {
     private String qrCodeBase64;
     private String message;
     private boolean success;
+
+
 }

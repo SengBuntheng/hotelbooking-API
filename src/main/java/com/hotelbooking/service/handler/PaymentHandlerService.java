@@ -58,10 +58,9 @@ public class PaymentHandlerService {
         else if(Constant.ABA_PAY.equalsIgnoreCase(paymentRequest.getPaymentMethod())){
             log.info("Payment method is ABA_PAY");
             try {
-                // Generate QR code for ABA Pay
                 ResponseEntity<byte[]> qrResponse = abaPayService.qrImage(
                         paymentRequest.getAmount().doubleValue(),
-                        "USD",  // Assuming USD currency
+                        "USD",
                         paymentRequest.getTransactionId()
                 );
                 AbaQrResponse response = khQRhandlerService.PostingPaymentToPaymentGatePay(paymentRequest);

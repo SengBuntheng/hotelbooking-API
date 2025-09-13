@@ -25,6 +25,13 @@ public class BookingService {
 
     public Booking createBooking(Booking booking) {
 
+        if (booking.getUser() == null || booking.getUser().getId() == 0) {
+            throw new IllegalArgumentException("User ID must be provided in the booking request.");
+        }
+        if (booking.getRoom() == null || booking.getRoom().getId() == 0) {
+            throw new IllegalArgumentException("Room ID must be provided in the booking request.");
+        }
+
         User user = userRepository.findById(booking.getUser().getId())
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + booking.getUser().getId()));
 

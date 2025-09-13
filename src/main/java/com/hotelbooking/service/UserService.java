@@ -17,9 +17,8 @@ public interface UserService {
     UserRespone findbyid(Long id);
     List<UserRespone> findAll();
 
-    // ADDED: Activates a user's account after OTP verification.
+
     void activateUser(String email);
 
-    // ADDED: Checks if a user exists by their email.
     boolean userExists(String email);
 }

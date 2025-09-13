@@ -37,13 +37,8 @@ public class UserController {
 
     @PutMapping("/{id}")
     public ResponseEntity<UserRespone> updateUser(@PathVariable Long id, @RequestBody UserRequest userRequest) {
-        User user = new User();
-        user.setId(id);
-        user.setEmail(userRequest.getEmail());
-        user.setFirstName(userRequest.getFirstName());
-        user.setLastName(userRequest.getLastName());
-        user.setPhone(userRequest.getPhone());
 
+        userService.Update(id ,userRequest);
         UserRespone updatedUser = userService.Update(id, userRequest);
         if (updatedUser != null) {
             return ResponseEntity.ok(updatedUser);

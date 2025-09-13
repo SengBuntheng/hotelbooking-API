@@ -51,8 +51,8 @@ public class UserserviceImpl implements UserService {
         User user = modelMapper.map(userRequest, User.class);
         user.setPasswordHash(passwordEncoder.encode(userRequest.getPassword()));
         user.setUuid(UUID.randomUUID());
-        user.setRole(UserRole.ADMIN);
-        user.setCreatedBy(Constant.SYSTEM);
+        user.setRole(UserRole.Gust);
+        user.setCreatedBy(Constant.ADMIN);
         user.setActive(false);
 
         User savedUser = userRepository.save(user);
@@ -82,7 +82,7 @@ public class UserserviceImpl implements UserService {
         userUpdated.setUpdatedAt(LocalDateTime.now());
         userUpdated.setUpdatedBy(Constant.SYSTEM);
 
-        // Only update the password if a new one is provided
+
         if (userRequest.getPassword() != null && !userRequest.getPassword().isEmpty()) {
             userUpdated.setPasswordHash(passwordEncoder.encode(userRequest.getPassword()));
         }

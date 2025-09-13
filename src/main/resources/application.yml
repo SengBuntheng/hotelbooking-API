@@ -6,10 +6,8 @@ server:
 spring:
   application:
     name: hotel-booking-api
-
   profiles:
     active: dev
-
   jpa:
     show-sql: true
     properties:
@@ -17,30 +15,6 @@ spring:
         format_sql: true
     hibernate:
       ddl-auto: update
-
-  datasource:
-    url: jdbc:mysql://localhost:3306/hotelbooking_db_dev?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
-    username: root
-    password:
-
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: 
-    password: 
-    protocol: smtp
-    properties:
-      mail:
-        smtp:
-          from: verify@bakongcity.city
-          auth: true
-          starttls:
-            enable: true
-          connectiontimeout: 5000
-          timeout: 5000
-          writetimeout: 5000
-          ssl.trust: smtp.gmail.com
-        debug: true
 
 springdoc:
   swagger-ui:
@@ -50,8 +24,9 @@ springdoc:
 
 app:
   jwt:
-    secret: NjdBNkQ5NkE0RjM4NTI2QjU3NTM4N0E1REI0MTM2NzQ1QzU5NEU1NzI0NDU1MDYxNDE0NDIzMjM0MzUzMDM1Mw==
-    expiration-ms: 86400000
+    # This is a more secure, longer key for HS512
+    secret: MzQ1MzZmNDU0NjRmNjQ2ZDRlMzU0NzQ1NTUzNzcxNDU1NTQyNTQ0YzQxNTE0NDQ0NTM0NDU0NDU0MjQ1NDU1Mw==
+    expiration-ms: 86400000 # 24 hours
   otp:
     expiration:
       minutes: 5
@@ -72,16 +47,17 @@ logging:
     com.sun.mail: DEBUG
     jakarta.mail: DEBUG
 
+# Common ABA Configuration for all profiles
 aba:
   public:
-    key: cd8c44212e596a0c4ff91c1fa85fae5dd66a944c
-  merchant: ec461441
+    key: 67cdeaba4eadef4dff8a5bd27a0e8888d4d2a2aa
+  merchant: ec461800
+  # CORRECTED API Base URL. It should end with /payments/
   api: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/purchase
-  callback: https://http://127.0.0.1:5500/v1/aba/callback
-
+  # CORRECTED Callback URL. Removed extra "https://"
+  callback: http://127.0.0.1:5501/v1/aba/callback
 
 ---
-
 spring:
   config:
     activate:
@@ -110,28 +86,18 @@ spring:
           writetimeout: 5000
           ssl.trust: smtp.gmail.com
         debug: true
-  security:
-    user:
-          name: admin
-          # password decoded from base64 YWRtaW46U2VuZ2J1bnRoZW5nMQ== is "admin:Sengbuntheng1"
-          password: Sengbuntheng1
-
 
 ---
-
-
 spring:
   config:
     activate:
       on-profile: prod
 
   datasource:
-    # CORRECTED: The URL must start with jdbc:mysql://
-    url: jdbc:mysql://avnadmin:AVNS_XnbWgpJfp01ff59Abur@mysql-1d18ad22-bunthengseng9-7dfc.f.aivencloud.com:17288/defaultdb?ssl-mode=REQUIRED
-    username: avnadmin
-    password: AVNS_XnbWgpJfp01ff59Abur
+    url: jdbc:mysql://${DB_HOST:mysql-1d18ad22-bunthengseng9-7dfc.f.aivencloud.com}:${DB_PORT:17288}/${DB_NAME:defaultdb}?ssl-mode=REQUIRED
+    username: ${DB_USER:avnadmin}
+    password: ${DB_PASSWORD:AVNS_XnbWgpJfp01ff59Abur}
 
-  # ... (rest of your prod configuration)
   mail:
     host: smtp.gmail.com
     port: 587
@@ -157,7 +123,6 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
 
-
 logging:
   config: classpath:logback-spring-prod.xml
   level:
@@ -174,18 +139,5 @@ telegram:
     chat-id: ${TELEGRAM_ALERT_CHAT_ID}
     rate-limit: 5
     include-stacktrace: true
-app:
-  jwt:
-    secret: NjdBNkQ5NkE0RjM4NTI2QjU3NTM4N0E1REI0MTM2NzQ1QzU5NEU1NzI0NDU1MDYxNDE0NDIzMjM0MzUzMDM1Mw==
-    expiration-ms: 86400000
-aba:
-  public:
-    key: cd8c44212e596a0c4ff91c1fa85fae5dd66a944c
-  merchant: ec461441
-  api: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/purchase
-  callback: https://http://127.0.0.1:5500/v1/aba/callback
 
 
-#//////////////////////////////////////////////
-#ABA KH QR SERVICE AND API KEY
-#//////////////////////////////////////////////

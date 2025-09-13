@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("v1/aba/")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*") // Replace "*" with specific frontend URL in production
+@CrossOrigin(origins = "*")
 public class PaymentController {
 
     private final ABAPayService abaPayService;

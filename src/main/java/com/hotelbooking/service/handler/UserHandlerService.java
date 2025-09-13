@@ -62,7 +62,6 @@ public class UserHandlerService {
         userResponse.setTokenExp(user.getExpDate());
         userResponse.setUuid(user.getUuid());
 
-        // CORRECTED: Add null checks before converting to Timestamp
         if (user.getLastLogin() != null) {
             userResponse.setLastLogin(Timestamp.valueOf(user.getLastLogin()));
         }
@@ -78,6 +77,9 @@ public class UserHandlerService {
 
         return userResponse;
     }
+
+
+
 
 
 

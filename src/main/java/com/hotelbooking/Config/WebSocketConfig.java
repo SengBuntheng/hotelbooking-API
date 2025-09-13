@@ -17,7 +17,16 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws-payment")  // Endpoint for frontend to connect
-                .setAllowedOriginPatterns("*") // Allow all origins (replace "*" with frontend URL in production)
+                .setAllowedOriginPatterns("*")
                 .withSockJS();  // Fallback for older browsers
     }
+    @Override
+    public void configureWebSocketTransport(WebSocketTransportRegistration registry) {
+        registry.setMessageSizeLimit(64 * 1024);
+        registry.setSendTimeLimit(20 * 1000);
+        registry.setSendBufferSizeLimit(512 * 1024);
+    }
+
+
+
 }
