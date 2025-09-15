@@ -25,8 +25,8 @@ springdoc:
 app:
   jwt:
     # This is a more secure, longer key for HS512
-    secret: MzQ1MzZmNDU0NjRmNjQ2ZDRlMzU0NzQ1NTUzNzcxNDU1NTQyNTQ0YzQxNTE0NDQ0NTM0NDU0NDU0MjQ1NDU1Mw==
-    expiration-ms: 86400000 # 24 hours
+    secret: 
+    expiration-ms:  # 24 hours
   otp:
     expiration:
       minutes: 5
@@ -50,8 +50,8 @@ logging:
 # Common ABA Configuration for all profiles
 aba:
   public:
-    key: 67cdeaba4eadef4dff8a5bd27a0e8888d4d2a2aa
-  merchant: ec461800
+    key: 
+  merchant: 
   # CORRECTED API Base URL. It should end with /payments/
   api: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/purchase
   # CORRECTED Callback URL. Removed extra "https://"
@@ -68,25 +68,7 @@ spring:
     username: root
     password:
 
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: userstmp36
-    password: gwfo uayv dvsm frer
-    protocol: smtp
-    properties:
-      mail:
-        smtp:
-          from: verify@bakongcity.city
-          auth: true
-          starttls:
-            enable: true
-          connectiontimeout: 5000
-          timeout: 5000
-          writetimeout: 5000
-          ssl.trust: smtp.gmail.com
-        debug: true
-
+  
 ---
 spring:
   config:
@@ -94,9 +76,9 @@ spring:
       on-profile: prod
 
   datasource:
-    url: jdbc:mysql://${DB_HOST:mysql-1d18ad22-bunthengseng9-7dfc.f.aivencloud.com}:${DB_PORT:17288}/${DB_NAME:defaultdb}?ssl-mode=REQUIRED
-    username: ${DB_USER:avnadmin}
-    password: ${DB_PASSWORD:AVNS_XnbWgpJfp01ff59Abur}
+    url: 
+    username: ${DB_USER:}
+    password: ${DB_PASSWORD:}
 
   mail:
     host: smtp.gmail.com
