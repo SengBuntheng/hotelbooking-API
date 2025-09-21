@@ -70,21 +70,22 @@ spring:
 
   
 ---
+---
 spring:
   config:
     activate:
       on-profile: prod
 
   datasource:
-    url: 
-    username: ${DB_USER:}
-    password: ${DB_PASSWORD:}
+    url: jdbc:mysql://mysql-1d18ad22-bunthengseng9-7dfc.f.aivencloud.com:17288/defaultdb?ssl-mode=REQUIRED
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
 
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${BREVO_SMTP_USERNAME:}
-    password: ${BREVO_SMTP_PASSWORD:}
+    username: ${BREVO_SMTP_USERNAME}
+    password: ${BREVO_SMTP_PASSWORD}
     protocol: smtp
     properties:
       mail:
@@ -122,4 +123,8 @@ telegram:
     rate-limit: 5
     include-stacktrace: true
 
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-ms: 86400000 # 24 hours
 
