@@ -21,6 +21,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
+import java.util.StringJoiner;
 
 @Service
 public class ABAPayService {
@@ -41,31 +42,33 @@ public class ABAPayService {
 
     private final SimpMessagingTemplate messagingTemplate;
     private final BookingRepository bookingRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
 
     public ABAPayService(SimpMessagingTemplate messagingTemplate, BookingRepository bookingRepository) {
         this.messagingTemplate = messagingTemplate;
         this.bookingRepository = bookingRepository;
     }
 
-    public String getQrImageBase64(double amount, String ccy, String txnId) {
-        try {
-            GenerateQrResponse exGenerateQrResponse = proceedQrRequest(amount, ccy, txnId);
-            if (exGenerateQrResponse == null || !exGenerateQrResponse.getStatus().getCode().equals("0")) {
-                logger.error("Failed to generate QR: {}",
-                        exGenerateQrResponse != null ? exGenerateQrResponse.getStatus().getMessage() : "No response");
-                throw new RuntimeException("Failed to generate QR code data.");
-            }
-
-            return exGenerateQrResponse.getQrImage().split(",")[1];
-        } catch (Exception e) {
-            logger.error("Error generating QR image data: {}", e.getMessage(), e);
-            throw new RuntimeException("Error generating QR image data", e);
+    public String getQrImageBase64(Booking booking) {
+        GenerateQrResponse qrResponse = proceedQrRequest(booking);
+        if (qrResponse == null || !"0".equals(qrResponse.getStatus().getCode())) {
+            String errorMessage = qrResponse != null ? qrResponse.getStatus().getMessage() : "No response from ABA Pay";
+            logger.error("Failed to generate QR code: {}", errorMessage);
+            throw new RuntimeException("Failed to generate QR code data: " + errorMessage);
         }
+        // Safely access qrImage to prevent NullPointerException
+        String qrImage = qrResponse.getQrImage();
+        if (qrImage == null || !qrImage.contains(",")) {
+            logger.error("Invalid qrImage format received from ABA Pay.");
+            throw new RuntimeException("Invalid QR image data received.");
+        }
+        return qrImage.split(",")[1];
     }
 
-    public ResponseEntity<byte[]> qrImage(double amount, String ccy, String txnId) {
+    public ResponseEntity<byte[]> qrImage(Booking booking) {
         try {
-            GenerateQrResponse exGenerateQrResponse = proceedQrRequest(amount, ccy, txnId);
+            GenerateQrResponse exGenerateQrResponse = proceedQrRequest(booking);
             if (exGenerateQrResponse == null || !exGenerateQrResponse.getStatus().getCode().equals("0")) {
                 logger.error("Failed to generate QR: {}",
                         exGenerateQrResponse != null ? exGenerateQrResponse.getStatus().getMessage() : "No response");
@@ -85,27 +88,14 @@ public class ABAPayService {
         }
     }
 
-    public String getPaymentUrl(double amount, String ccy, String txnId) {
-        try {
-            GenerateQrResponse exGenerateQrResponse = proceedQrRequest(amount, ccy, txnId);
-            if (exGenerateQrResponse == null || !exGenerateQrResponse.getStatus().getCode().equals("0")) {
-                logger.error("Failed to generate QR: {}",
-                        exGenerateQrResponse != null ? exGenerateQrResponse.getStatus().getMessage() : "No response");
-                throw new RuntimeException("Failed to get payment URL");
-            }
-            return exGenerateQrResponse.getAbapay_deeplink();
-        } catch (Exception e) {
-            logger.error("Error generating payment URL: {}", e.getMessage(), e);
-            throw new RuntimeException("Error generating payment URL", e);
-        }
-    }
 
     public void txnCallback(CallbackRequest request) {
         try {
             CheckTxnResponse checkTxnResponse = checkTransaction(request.getTran_id());
 
-            if (checkTxnResponse == null || !checkTxnResponse.getStatus().getCode().equals("00")) {
+            if (checkTxnResponse == null || !"00".equals(checkTxnResponse.getStatus().getCode())) {
                 String message = checkTxnResponse != null ? checkTxnResponse.getStatus().getMessage() : "No response";
+                logger.error("Transaction check failed for tran_id={}: {}", request.getTran_id(), message);
                 sendPaymentStatus(request.getTran_id(), "FAIL, " + message);
                 return;
             }
@@ -129,89 +119,129 @@ public class ABAPayService {
                             break;
                     }
                     bookingRepository.save(booking);
+                } else {
+                    logger.warn("Booking not found for tran_id={}", request.getTran_id());
                 }
             }
         } catch (Exception e) {
-            logger.error("Callback processing error: {}", e.getMessage(), e);
+            logger.error("Callback processing error for tran_id={}: {}", request.getTran_id(), e.getMessage(), e);
             sendPaymentStatus(request.getTran_id(), "FAIL, " + e.getMessage());
         }
     }
 
-    private GenerateQrResponse proceedQrRequest(double amount, String ccy, String txnId) {
-        try {
-            GenerateQrRequest requestBody = new GenerateQrRequest();
-            requestBody.setAmount(amount);
-            requestBody.setCurrency(ccy);
-            requestBody.setCallback_url(encodeCallBackUrl());
-            requestBody.setLifetime(3);
-            requestBody.setMerchant_id(merchantId);
-            requestBody.setPayment_option("abapay_khqr");
-            requestBody.setQr_image_template("template6_color");
-            requestBody.setReq_time(dateTimeString());
-            requestBody.setTran_id(txnId);
 
-            String hash = generateHashString(requestBody);
-            requestBody.setHash(hash);
+    private GenerateQrResponse proceedQrRequest(Booking booking) {
+        GenerateQrRequest requestBody = new GenerateQrRequest();
+        requestBody.setAmount(booking.getTotalAmount().doubleValue());
+        requestBody.setCurrency("USD");
+        requestBody.setCallback_url(encodeCallBackUrl());
+        requestBody.setLifetime(3);
+        requestBody.setMerchant_id(merchantId);
+        requestBody.setPayment_option("abapay_khqr");
+        requestBody.setQr_image_template("template6_color");
+        requestBody.setReq_time(dateTimeString());
+        requestBody.setTran_id(String.valueOf(booking.getId()));
 
-            return requestQr(requestBody);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        // Populate user details from the booking object
+        if (booking.getUser() != null) {
+            requestBody.setFirst_name(booking.getUser().getFirstName());
+            requestBody.setLast_name(booking.getUser().getLastName());
+            requestBody.setEmail(booking.getUser().getEmail());
+            requestBody.setPhone(booking.getUser().getPhone());
         }
-    }
 
-    private GenerateQrResponse requestQr(GenerateQrRequest request) {
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            String json = objectMapper.writeValueAsString(request);
-            // Append the correct path to the baseUrl
-            HttpResponse<String> response = Unirest.post(baseUrl + "generate-qr")
-                    .header("Content-Type", "application/json")
-                    .body(json)
-                    .asString();
+        String hash = generateHashString(requestBody);
+        requestBody.setHash(hash);
 
-            if (response.getStatus() == 200 && response.getBody() != null && response.getBody().trim().startsWith("{")) {
-                return objectMapper.readValue(response.getBody(), GenerateQrResponse.class);
-            } else {
-                logger.error("Failed to get a valid JSON response from ABA PAY API. Status: {}, Body: {}", response.getStatus(), response.getBody());
-                throw new RuntimeException("Received an invalid response from the payment gateway.");
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return sendApiRequest("generate-qr", requestBody, GenerateQrResponse.class);
     }
 
     private CheckTxnResponse checkTransaction(String txnId) {
+        CheckTxnRequest request = new CheckTxnRequest();
+        String reqTime = dateTimeString();
+        request.setReq_time(reqTime);
+        request.setMerchant_id(merchantId);
+        request.setTran_id(txnId);
+        request.setHash(generateHashVerifyTxn(txnId, reqTime));
+
+        return sendApiRequest("check-transaction-2", request, CheckTxnResponse.class);
+    }
+
+    private <T> T sendApiRequest(String endpoint, Object request, Class<T> responseClass) {
+        String fullUrl = baseUrl + endpoint;
         try {
-            CheckTxnRequest request = new CheckTxnRequest();
-            String reqTime = dateTimeString();
-            request.setReq_time(reqTime);
-            request.setMerchant_id(merchantId);
-            request.setTran_id(txnId);
-            request.setHash(generateHashVerifyTxn(txnId, reqTime));
+            String jsonPayload = objectMapper.writeValueAsString(request);
 
-            ObjectMapper objectMapper = new ObjectMapper();
-            String json = objectMapper.writeValueAsString(request);
+            logger.info("Sending POST request to ABA PAY API:");
+            logger.info("URL: {}", fullUrl);
+            logger.info("Payload: {}", jsonPayload);
 
-            // Append the correct path to the baseUrl
-            HttpResponse<String> response = Unirest.post(baseUrl + "check-transaction-2")
+            HttpResponse<String> response = Unirest.post(fullUrl)
                     .header("Content-Type", "application/json")
-                    .body(json)
+                    .body(jsonPayload)
                     .asString();
 
-            return objectMapper.readValue(response.getBody(), CheckTxnResponse.class);
+            String responseBody = response.getBody();
+            logger.info("Received response from ABA PAY API:");
+            logger.info("Status: {}", response.getStatus());
+            logger.info("Body: {}", responseBody);
+
+
+            if (response.getStatus() == 200 && responseBody != null && responseBody.trim().startsWith("{")) {
+                return objectMapper.readValue(responseBody, responseClass);
+            } else if (response.getStatus() == 500 && responseBody != null && responseBody.trim().startsWith("{")) {
+                // Handle the 500 error gracefully
+                logger.error("ABA Pay API returned a 500 error: {}", responseBody);
+                throw new RuntimeException("Received a server error from the payment gateway.");
+            }
+            else {
+                logger.error("Received an invalid or non-JSON response from the payment gateway.");
+                throw new RuntimeException("Received an invalid response from the payment gateway.");
+            }
         } catch (Exception e) {
-            logger.error("Transaction check error: {}", e.getMessage(), e);
+            logger.error("Error during API request to {}: {}", fullUrl, e.getMessage(), e);
+            // Re-throw the original exception to be handled by the global exception handler
             throw new RuntimeException(e);
         }
     }
 
     private String generateHashString(GenerateQrRequest request) {
+        String data = new StringJoiner("")
+                .add(request.getReq_time())
+                .add(request.getMerchant_id())
+                .add(request.getTran_id())
+                .add(String.valueOf(request.getAmount()))
+                .add(String.valueOf(request.getItems()))
+                .add(request.getFirst_name())
+                .add(request.getLast_name())
+                .add(request.getEmail())
+                .add(request.getPhone())
+                .add(request.getPurchase_type())
+                .add(request.getPayment_option())
+                .add(request.getCallback_url())
+                .add(request.getReturn_deeplink())
+                .add(request.getCurrency())
+                .add(request.getCustom_fields())
+                .add(request.getReturn_params())
+                .add(request.getPayout())
+                .add(String.valueOf(request.getLifetime()))
+                .add(request.getQr_image_template())
+                .toString()
+                .replaceAll("null", "");
+        return createHmacSha512(data);
+    }
+
+
+    private String generateHashVerifyTxn(String txnId, String reqTime) {
+        return createHmacSha512(reqTime + merchantId + txnId);
+    }
+
+    private String createHmacSha512(String data) {
         try {
-            String b4hash = summaryObjectToString(request);
             Mac sha512HMAC = Mac.getInstance("HmacSHA512");
             SecretKeySpec secretKey = new SecretKeySpec(apiKey.getBytes(), "HmacSHA512");
             sha512HMAC.init(secretKey);
-            byte[] hashBytes = sha512HMAC.doFinal(b4hash.getBytes());
+            byte[] hashBytes = sha512HMAC.doFinal(data.getBytes());
             return Base64.getEncoder().encodeToString(hashBytes);
         } catch (Exception e) {
             logger.error("Hash generation failed: {}", e.getMessage(), e);
@@ -219,49 +249,20 @@ public class ABAPayService {
         }
     }
 
-    private String generateHashVerifyTxn(String txnId, String reqTime) {
-        try {
-            String plainHash = reqTime + merchantId + txnId;
-            Mac sha512HMAC = Mac.getInstance("HmacSHA512");
-            SecretKeySpec secretKey = new SecretKeySpec(apiKey.getBytes(), "HmacSHA512");
-            sha512HMAC.init(secretKey);
-            byte[] hashBytes = sha512HMAC.doFinal(plainHash.getBytes());
-            return Base64.getEncoder().encodeToString(hashBytes);
-        } catch (Exception e) {
-            logger.error("Verification hash generation failed: {}", e.getMessage(), e);
-            throw new RuntimeException(e);
-        }
-    }
-
-    private String summaryObjectToString(GenerateQrRequest request) {
-        return (request.getReq_time() + request.getMerchant_id() +
-                request.getTran_id() + request.getAmount() +
-                request.getItems() + request.getFirst_name() +
-                request.getLast_name() + request.getEmail() +
-                request.getPhone() + request.getPurchase_type() +
-                request.getPayment_option() + request.getCallback_url() +
-                request.getReturn_deeplink() + request.getCurrency() +
-                request.getCustom_fields() + request.getReturn_params() +
-                request.getPayout() + request.getLifetime() +
-                request.getQr_image_template()).replaceAll("null", "");
-    }
-
     private void sendPaymentStatus(String transactionId, String status) {
+        logger.info("Sending payment status update for transactionId='{}': {}", transactionId, status);
         messagingTemplate.convertAndSend("/topic/payment-status", Map.of(
                 "transactionId", transactionId,
                 "status", status
         ));
     }
 
+
     private String encodeCallBackUrl() {
         return Base64.getEncoder().encodeToString(callbackUrl.getBytes());
     }
 
     private String dateTimeString() {
-        LocalDateTime now = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-        return now.format(formatter);
+        return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
     }
-
-
 }

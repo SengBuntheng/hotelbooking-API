@@ -1,38 +1,32 @@
 package com.hotelbooking.service.handler;
+
+import com.hotelbooking.Constant.Constant;
 import com.hotelbooking.dto.PaymentRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+
 @Service
 @Slf4j
 public class CashhandlerService {
-    private final RestTemplate restTemplate;
 
-    public CashhandlerService(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
+    public CashhandlerService() {
+        // No RestTemplate needed for local processing
     }
 
+    /**
+     * Simulates the processing of a cash payment by logging the transaction
+     * and returning a success status.
+     *
+     * @param paymentRequest The details of the payment to be processed.
+     * @return A success constant indicating the payment was processed.
+     */
     public String processCashPayment(PaymentRequest paymentRequest) {
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("Authorization", "Bearer " + "your_api_key");
+        log.info("Processing cash payment locally for transactionId: {}", paymentRequest.getTransactionId());
+        // Here you could add logic to save the cash payment details to a local database or file if needed.
+        log.info("Cash payment for amount {} successfully recorded for bookingId: {}",
+                paymentRequest.getAmount(),
+                paymentRequest.getBookingId().getId());
 
-            HttpEntity<PaymentRequest> request = new HttpEntity<>(paymentRequest, headers);
-
-            ResponseEntity<String> response = restTemplate.exchange(
-                    "https://api.cashpayment.com/process",
-                    HttpMethod.POST,
-                    request,
-                    String.class
-            );
-
-            log.info("Response from Cash API: {}", response.getBody());
-            return response.getStatusCode().is2xxSuccessful() ? response.getBody() : null;
-        } catch (Exception e) {
-            log.error("Error processing cash payment", e);
-            return null;
-        }
+        return Constant.Success;
     }
 }

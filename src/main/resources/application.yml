@@ -22,122 +22,73 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 
+# Common application properties
 app:
   jwt:
-    # This is a more secure, longer key for HS512
-    secret: MzQ1MzZmNDU0NjRmNjQ2ZDRlMzU0NzQ1NTUzNzcxNDU1NTQyNTQ0YzQxNTE0NDQ0NTM0NDU0NDU0MjQ1NDU1Mw==
+    # Use an environment variable for the secret key. DO NOT hardcode this.
+    secret: ${JWT_SECRET:MzQ1MzZmNDU0NjRmNjQ2ZDRlMzU0NzQ1NTUzNzcxNDU1NTQyNTQ0YzQxNTE0NDQ0NTM0NDU0NDU0MjQ1NDU1Mw==}
     expiration-ms: 86400000 # 24 hours
   otp:
     expiration:
       minutes: 5
     max:
       attempts: 3
-    cleanup:
-      interval:
-        ms: 60000
     resend:
       timeout:
         minutes: 1
 
-logging:
-  level:
-    org.springframework.web: DEBUG
-    org.hibernate.SQL: DEBUG
-    com.hotelbooking: DEBUG
-    com.sun.mail: DEBUG
-    jakarta.mail: DEBUG
-
-# Common ABA Configuration for all profiles
+# Common ABA Pay configuration
 aba:
   public:
     key: 67cdeaba4eadef4dff8a5bd27a0e8888d4d2a2aa
   merchant: ec461800
-  # CORRECTED API Base URL. It should end with /payments/
-  api: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/purchase
-  # CORRECTED Callback URL. Removed extra "https://"
+  api: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/
   callback: http://127.0.0.1:5501/v1/aba/callback
 
 ---
+# Development Profile
 spring:
   config:
     activate:
       on-profile: dev
-
   datasource:
     url: jdbc:mysql://localhost:3306/hotelbooking_db_dev?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
     username: root
     password:
-
   mail:
     host: smtp.gmail.com
     port: 587
     username: userstmp36
-    password: gwfo uayv dvsm frer
-    protocol: smtp
+    password: gwfo uayv dvsm frer # This should be a Google App Password
     properties:
       mail:
         smtp:
-          from: verify@bakongcity.city
           auth: true
           starttls:
             enable: true
-          connectiontimeout: 5000
-          timeout: 5000
-          writetimeout: 5000
-          ssl.trust: smtp.gmail.com
-        debug: true
 
 ---
+# Production Profile
 spring:
   config:
     activate:
       on-profile: prod
-
   datasource:
-    url: jdbc:mysql://${DB_HOST:mysql-1d18ad22-bunthengseng9-7dfc.f.aivencloud.com}:${DB_PORT:17288}/${DB_NAME:defaultdb}?ssl-mode=REQUIRED
-    username: ${DB_USER:avnadmin}
-    password: ${DB_PASSWORD:AVNS_XnbWgpJfp01ff59Abur}
-
+    url: jdbc:mysql://${DB_HOST}/${DB_NAME}?ssl-mode=REQUIRED
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${BREVO_SMTP_USERNAME:}
-    password: ${BREVO_SMTP_PASSWORD:}
-    protocol: smtp
+    username: ${BREVO_SMTP_USERNAME}
+    password: ${BREVO_SMTP_PASSWORD}
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
-          connectiontimeout: 5000
-          timeout: 5000
-          writetimeout: 5000
-          ssl.trust: smtp.gmail.com
-
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: false
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
-
-logging:
-  config: classpath:logback-spring-prod.xml
-  level:
-    root: WARN
-    com.hotelbooking: INFO
-    org.springframework.web: WARN
-    org.hibernate: WARN
-    com.zaxxer.hikari: WARN
-
-telegram:
-  alert:
-    enabled: true
-    bot-token: ${TELEGRAM_ALERT_BOT_TOKEN}
-    chat-id: ${TELEGRAM_ALERT_CHAT_ID}
-    rate-limit: 5
-    include-stacktrace: true
-
-

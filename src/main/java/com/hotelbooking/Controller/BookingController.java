@@ -29,11 +29,7 @@ public class BookingController {
         Booking savedBooking = bookingService.createBooking(booking);
 
         // 2. Generate the QR code as a Base64 string
-        String qrCodeBase64 = abaPayService.getQrImageBase64(
-                savedBooking.getTotalAmount().doubleValue(),
-                "USD",
-                String.valueOf(savedBooking.getId())
-        );
+        String qrCodeBase64 = abaPayService.getQrImageBase64(savedBooking);
 
         // 3. Create the structured JSON response
         BookingCreationResponse response = new BookingCreationResponse(savedBooking.getId(), qrCodeBase64);
@@ -42,7 +38,7 @@ public class BookingController {
         return ResponseEntity.ok(response);
     }
 
-     @GetMapping
+    @GetMapping
     public ResponseEntity<List<Booking>> getAllBookings() {
         List<Booking> bookings = bookingService.getAllBookings();
         return ResponseEntity.ok(bookings);

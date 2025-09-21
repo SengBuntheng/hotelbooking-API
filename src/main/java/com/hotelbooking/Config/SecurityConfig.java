@@ -33,19 +33,15 @@ public class SecurityConfig {
     private final JwtFilter jwtFilter;
     private final UserDetailsService userDetailsService;
 
+    // These endpoints are publicly accessible without any authentication
     private static final String[] PUBLIC_ENDPOINTS = {
-            "/v1/auth/**",
+            "/v1/auth/**", // Allows /register, /verify, and /login
             "/v1/aba/callback",
             "/ws-payment/**",
             "/swagger-ui/**",
             "/v3/api-docs/**",
-            "/actuator/health",
-            "/v1/bookings/**",
-            "v1/user/**"
-
+            "/actuator/health"
     };
-
-
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -54,8 +50,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                        .requestMatchers("/**").permitAll()
-                        .anyRequest().authenticated()
+                        .anyRequest().authenticated() // All other endpoints require a valid JWT
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -96,7 +91,6 @@ public class SecurityConfig {
                 "Authorization", "Content-Type"
         ));
         configuration.setAllowCredentials(true);
-
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

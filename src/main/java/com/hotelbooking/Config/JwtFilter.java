@@ -38,6 +38,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
 
+        // If the header is null, or it's not a Bearer token, pass it to the next filter
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -79,7 +80,7 @@ public class JwtFilter extends OncePerRequestFilter {
             log.error("JWT Token processing error: {}", e.getMessage());
             sendUnauthorizedError(response, "Invalid JWT token");
         } catch (Exception e) {
-            log.error("An unexpected error occurred during JWT processing: {}", e.getMessage());
+            log.error("An unexpected error occurred during apy JWT processing: {}", e.getMessage());
             sendUnauthorizedError(response, "Authentication error");
         }
     }
