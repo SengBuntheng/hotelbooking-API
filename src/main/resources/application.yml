@@ -73,10 +73,13 @@ spring:
   config:
     activate:
       on-profile: prod
+
   datasource:
-    url: jdbc:mysql://${DB_HOST}/${DB_NAME}?ssl-mode=REQUIRED
+    # Corrected URL includes the DB_PORT
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?ssl-mode=REQUIRED
     username: ${DB_USER}
     password: ${DB_PASSWORD}
+
   mail:
     host: smtp.gmail.com
     port: 587
@@ -88,7 +91,11 @@ spring:
           auth: true
           starttls:
             enable: true
+
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
