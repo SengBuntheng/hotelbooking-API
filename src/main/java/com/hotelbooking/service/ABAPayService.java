@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.time.LocalDateTime;
@@ -21,7 +22,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
-import java.util.StringJoiner;
 
 @Service
 public class ABAPayService {
@@ -44,7 +44,6 @@ public class ABAPayService {
     private final BookingRepository bookingRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-
     public ABAPayService(SimpMessagingTemplate messagingTemplate, BookingRepository bookingRepository) {
         this.messagingTemplate = messagingTemplate;
         this.bookingRepository = bookingRepository;
@@ -57,7 +56,7 @@ public class ABAPayService {
             logger.error("Failed to generate QR code: {}", errorMessage);
             throw new RuntimeException("Failed to generate QR code data: " + errorMessage);
         }
-        // Safely access qrImage to prevent NullPointerException
+
         String qrImage = qrResponse.getQrImage();
         if (qrImage == null || !qrImage.contains(",")) {
             logger.error("Invalid qrImage format received from ABA Pay.");
@@ -68,14 +67,13 @@ public class ABAPayService {
 
     public ResponseEntity<byte[]> qrImage(Booking booking) {
         try {
-            GenerateQrResponse exGenerateQrResponse = proceedQrRequest(booking);
-            if (exGenerateQrResponse == null || !exGenerateQrResponse.getStatus().getCode().equals("0")) {
-                logger.error("Failed to generate QR: {}",
-                        exGenerateQrResponse != null ? exGenerateQrResponse.getStatus().getMessage() : "No response");
+            GenerateQrResponse response = proceedQrRequest(booking);
+            if (response == null || !"0".equals(response.getStatus().getCode())) {
+                logger.error("Failed to generate QR: {}", response != null ? response.getStatus().getMessage() : "No response");
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
             }
 
-            String imgData = exGenerateQrResponse.getQrImage().split(",")[1];
+            String imgData = response.getQrImage().split(",")[1];
             byte[] imageBytes = Base64.getDecoder().decode(imgData);
 
             HttpHeaders headers = new HttpHeaders();
@@ -87,7 +85,6 @@ public class ABAPayService {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
 
     public void txnCallback(CallbackRequest request) {
         try {
@@ -129,12 +126,11 @@ public class ABAPayService {
         }
     }
 
-
     private GenerateQrResponse proceedQrRequest(Booking booking) {
         GenerateQrRequest requestBody = new GenerateQrRequest();
         requestBody.setAmount(booking.getTotalAmount().doubleValue());
         requestBody.setCurrency("USD");
-        requestBody.setCallback_url(encodeCallBackUrl());
+        requestBody.setCallback_url(callbackUrl);
         requestBody.setLifetime(3);
         requestBody.setMerchant_id(merchantId);
         requestBody.setPayment_option("abapay_khqr");
@@ -142,7 +138,6 @@ public class ABAPayService {
         requestBody.setReq_time(dateTimeString());
         requestBody.setTran_id(String.valueOf(booking.getId()));
 
-        // Populate user details from the booking object
         if (booking.getUser() != null) {
             requestBody.setFirst_name(booking.getUser().getFirstName());
             requestBody.setLast_name(booking.getUser().getLastName());
@@ -186,51 +181,45 @@ public class ABAPayService {
             logger.info("Status: {}", response.getStatus());
             logger.info("Body: {}", responseBody);
 
-
             if (response.getStatus() == 200 && responseBody != null && responseBody.trim().startsWith("{")) {
                 return objectMapper.readValue(responseBody, responseClass);
             } else if (response.getStatus() == 500 && responseBody != null && responseBody.trim().startsWith("{")) {
-                // Handle the 500 error gracefully
                 logger.error("ABA Pay API returned a 500 error: {}", responseBody);
                 throw new RuntimeException("Received a server error from the payment gateway.");
-            }
-            else {
+            } else {
                 logger.error("Received an invalid or non-JSON response from the payment gateway.");
                 throw new RuntimeException("Received an invalid response from the payment gateway.");
             }
         } catch (Exception e) {
             logger.error("Error during API request to {}: {}", fullUrl, e.getMessage(), e);
-            // Re-throw the original exception to be handled by the global exception handler
             throw new RuntimeException(e);
         }
     }
 
+    // ? Fixed: Generates hash using ALL fields in proper order
     private String generateHashString(GenerateQrRequest request) {
-        String data = new StringJoiner("")
-                .add(request.getReq_time())
-                .add(request.getMerchant_id())
-                .add(request.getTran_id())
-                .add(String.valueOf(request.getAmount()))
-                .add(String.valueOf(request.getItems()))
-                .add(request.getFirst_name())
-                .add(request.getLast_name())
-                .add(request.getEmail())
-                .add(request.getPhone())
-                .add(request.getPurchase_type())
-                .add(request.getPayment_option())
-                .add(request.getCallback_url())
-                .add(request.getReturn_deeplink())
-                .add(request.getCurrency())
-                .add(request.getCustom_fields())
-                .add(request.getReturn_params())
-                .add(request.getPayout())
-                .add(String.valueOf(request.getLifetime()))
-                .add(request.getQr_image_template())
-                .toString()
-                .replaceAll("null", "");
+        String data = request.getReq_time() +
+                request.getMerchant_id() +
+                request.getTran_id() +
+                request.getAmount() +
+                safe(request.getItems()) +
+                safe(request.getFirst_name()) +
+                safe(request.getLast_name()) +
+                safe(request.getEmail()) +
+                safe(request.getPhone()) +
+                safe(request.getPurchase_type()) +
+                safe(request.getPayment_option()) +
+                safe(request.getCallback_url()) +
+                safe(request.getReturn_deeplink()) +
+                safe(request.getCurrency()) +
+                safe(request.getCustom_fields()) +
+                safe(request.getReturn_params()) +
+                safe(request.getPayout()) +
+                request.getLifetime() +
+                safe(request.getQr_image_template());
+
         return createHmacSha512(data);
     }
-
 
     private String generateHashVerifyTxn(String txnId, String reqTime) {
         return createHmacSha512(reqTime + merchantId + txnId);
@@ -249,20 +238,19 @@ public class ABAPayService {
         }
     }
 
+    private String safe(String value) {
+        return value != null ? value : "";
+    }
+
+    private String dateTimeString() {
+        return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+    }
+
     private void sendPaymentStatus(String transactionId, String status) {
         logger.info("Sending payment status update for transactionId='{}': {}", transactionId, status);
         messagingTemplate.convertAndSend("/topic/payment-status", Map.of(
                 "transactionId", transactionId,
                 "status", status
         ));
-    }
-
-
-    private String encodeCallBackUrl() {
-        return Base64.getEncoder().encodeToString(callbackUrl.getBytes());
-    }
-
-    private String dateTimeString() {
-        return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
     }
 }

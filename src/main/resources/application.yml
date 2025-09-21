@@ -3,6 +3,28 @@ server:
   error:
     include-message: always
 
+logging:
+  level:
+    root: INFO
+    AbaPaymentService: DEBUG
+    com.example.hotelbooking: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+  file:
+    name: hotel-booking-api.log
+
+  logback:
+    rollingpolicy:
+      file-name-pattern: hotel-booking-api.%d{yyyy-MM-dd}.%i.log.gz
+      max-file-size: 10MB
+      max-history: 30
+      total-size-cap: 1GB
+
 spring:
   application:
     name: hotel-booking-api
@@ -43,7 +65,8 @@ aba:
     key: 67cdeaba4eadef4dff8a5bd27a0e8888d4d2a2aa
   merchant: ec461800
   api: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/
-  callback: http://127.0.0.1:5501/v1/aba/callback
+  callback: https://api.bakongcity.city/v1/aba/callback/
+
 
 ---
 # Development Profile
@@ -92,6 +115,8 @@ spring:
           starttls:
             enable: true
 
+
+
   jpa:
     hibernate:
       ddl-auto: validate
@@ -99,3 +124,10 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
+
+aba:
+  public:
+    key: 67cdeaba4eadef4dff8a5bd27a0e8888d4d2a2aa
+  merchant: ec461800
+  api: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/
+  callback: https://api.bakongcity.city/v1/aba/callback/
