@@ -22,11 +22,8 @@ public class LoginResponse {
     private Boolean active;
     private String email;
     private String token;
+    private String refreshToken;
     private Timestamp tokenExp;
     private String phone;
     private UserRespone user;
-
-
-
-
 }

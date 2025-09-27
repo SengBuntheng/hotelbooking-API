@@ -4,6 +4,7 @@ import com.hotelbooking.Repository.BookingRepository;
 import com.hotelbooking.dto.CallbackRequest;
 import com.hotelbooking.model.Booking;
 import com.hotelbooking.service.ABAPayService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,12 +29,14 @@ public class PaymentController {
                 .orElseThrow(() -> new RuntimeException("Booking not found with id: " + txnId));
 
         // Call the updated qrImage method with the booking object
-        ResponseEntity<byte[]> response = abaPayService.qrImage(booking);
-        return response != null ? response : ResponseEntity.internalServerError().build();
+        return abaPayService.qrImage(booking);
     }
 
+    /**
+     * Handles the callback notification from the ABA payment gateway.
+     */
     @PostMapping("callback")
-    public ResponseEntity<Void> ExCallbackRequest(@RequestBody CallbackRequest request) {
+    public ResponseEntity<Void> handleCallback(@RequestBody CallbackRequest request) {
         abaPayService.txnCallback(request);
         return ResponseEntity.ok().build();
     }

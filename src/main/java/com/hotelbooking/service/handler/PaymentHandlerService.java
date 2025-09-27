@@ -68,7 +68,6 @@ public class PaymentHandlerService {
 
     private String handleCardPayment(PaymentRequest request) {
         log.info("Processing card payment for transactionId: {}", request.getTransactionId());
-        // Placeholder for card payment logic
         return Constant.Success;
     }
 

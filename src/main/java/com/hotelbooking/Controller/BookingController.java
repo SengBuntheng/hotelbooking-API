@@ -24,14 +24,11 @@ public class BookingController {
 
     @PostMapping("/create")
     public ResponseEntity<BookingCreationResponse> createBookingAndGetQrCode(@RequestBody Booking booking) {
-        // 1. Save the booking with an initial status
         booking.setBookingStatus(com.hotelbooking.Enum.BookingStatus.IN_PROGRESS);
         Booking savedBooking = bookingService.createBooking(booking);
 
-        // 2. Generate the QR code as a Base64 string
         String qrCodeBase64 = abaPayService.getQrImageBase64(savedBooking);
 
-        // 3. Create the structured JSON response
         BookingCreationResponse response = new BookingCreationResponse(savedBooking.getId(), qrCodeBase64);
 
         // 4. Return the response

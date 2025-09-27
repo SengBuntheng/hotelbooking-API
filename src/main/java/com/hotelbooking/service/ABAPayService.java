@@ -4,16 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hotelbooking.Repository.BookingRepository;
 import com.hotelbooking.dto.*;
 import com.hotelbooking.model.Booking;
-import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.Unirest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -22,6 +20,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
+import java.util.StringJoiner;
 
 @Service
 public class ABAPayService {
@@ -42,11 +41,13 @@ public class ABAPayService {
 
     private final SimpMessagingTemplate messagingTemplate;
     private final BookingRepository bookingRepository;
+    private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public ABAPayService(SimpMessagingTemplate messagingTemplate, BookingRepository bookingRepository) {
+    public ABAPayService(SimpMessagingTemplate messagingTemplate, BookingRepository bookingRepository, RestTemplate restTemplate) {
         this.messagingTemplate = messagingTemplate;
         this.bookingRepository = bookingRepository;
+        this.restTemplate = restTemplate;
     }
 
     public String getQrImageBase64(Booking booking) {
@@ -56,7 +57,6 @@ public class ABAPayService {
             logger.error("Failed to generate QR code: {}", errorMessage);
             throw new RuntimeException("Failed to generate QR code data: " + errorMessage);
         }
-
         String qrImage = qrResponse.getQrImage();
         if (qrImage == null || !qrImage.contains(",")) {
             logger.error("Invalid qrImage format received from ABA Pay.");
@@ -67,13 +67,14 @@ public class ABAPayService {
 
     public ResponseEntity<byte[]> qrImage(Booking booking) {
         try {
-            GenerateQrResponse response = proceedQrRequest(booking);
-            if (response == null || !"0".equals(response.getStatus().getCode())) {
-                logger.error("Failed to generate QR: {}", response != null ? response.getStatus().getMessage() : "No response");
+            GenerateQrResponse exGenerateQrResponse = proceedQrRequest(booking);
+            if (exGenerateQrResponse == null || !exGenerateQrResponse.getStatus().getCode().equals("0")) {
+                logger.error("Failed to generate QR: {}",
+                        exGenerateQrResponse != null ? exGenerateQrResponse.getStatus().getMessage() : "No response");
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
             }
 
-            String imgData = response.getQrImage().split(",")[1];
+            String imgData = exGenerateQrResponse.getQrImage().split(",")[1];
             byte[] imageBytes = Base64.getDecoder().decode(imgData);
 
             HttpHeaders headers = new HttpHeaders();
@@ -126,11 +127,13 @@ public class ABAPayService {
         }
     }
 
+    // ... existing code ...
+
     private GenerateQrResponse proceedQrRequest(Booking booking) {
         GenerateQrRequest requestBody = new GenerateQrRequest();
         requestBody.setAmount(booking.getTotalAmount().doubleValue());
         requestBody.setCurrency("USD");
-        requestBody.setCallback_url(callbackUrl);
+        requestBody.setCallback_url(encodeCallBackUrl());
         requestBody.setLifetime(3);
         requestBody.setMerchant_id(merchantId);
         requestBody.setPayment_option("abapay_khqr");
@@ -138,6 +141,7 @@ public class ABAPayService {
         requestBody.setReq_time(dateTimeString());
         requestBody.setTran_id(String.valueOf(booking.getId()));
 
+        // Populate user details from the booking object
         if (booking.getUser() != null) {
             requestBody.setFirst_name(booking.getUser().getFirstName());
             requestBody.setLast_name(booking.getUser().getLastName());
@@ -145,11 +149,21 @@ public class ABAPayService {
             requestBody.setPhone(booking.getUser().getPhone());
         }
 
-        String hash = generateHashString(requestBody);
-        requestBody.setHash(hash);
+        // ** FIX: Initialize optional fields to empty strings to ensure hash consistency **
+        requestBody.setItems("");
+        requestBody.setCustom_fields("");
+        requestBody.setPurchase_type("");
+        requestBody.setReturn_deeplink("");
+        requestBody.setReturn_params("");
+        requestBody.setPayout("");
+
+
+        requestBody.setHash(generateHashString(requestBody));
 
         return sendApiRequest("generate-qr", requestBody, GenerateQrResponse.class);
     }
+
+// ... rest of the file ...
 
     private CheckTxnResponse checkTransaction(String txnId) {
         CheckTxnRequest request = new CheckTxnRequest();
@@ -165,60 +179,57 @@ public class ABAPayService {
     private <T> T sendApiRequest(String endpoint, Object request, Class<T> responseClass) {
         String fullUrl = baseUrl + endpoint;
         try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
             String jsonPayload = objectMapper.writeValueAsString(request);
+            HttpEntity<String> entity = new HttpEntity<>(jsonPayload, headers);
 
-            logger.info("Sending POST request to ABA PAY API:");
-            logger.info("URL: {}", fullUrl);
+            logger.info("Sending POST request to ABA PAY API URL: {}", fullUrl);
             logger.info("Payload: {}", jsonPayload);
 
-            HttpResponse<String> response = Unirest.post(fullUrl)
-                    .header("Content-Type", "application/json")
-                    .body(jsonPayload)
-                    .asString();
+            ResponseEntity<String> response = restTemplate.postForEntity(fullUrl, entity, String.class);
 
             String responseBody = response.getBody();
-            logger.info("Received response from ABA PAY API:");
-            logger.info("Status: {}", response.getStatus());
-            logger.info("Body: {}", responseBody);
+            logger.info("Received response from ABA PAY API Status: {}, Body: {}", response.getStatusCode(), responseBody);
 
-            if (response.getStatus() == 200 && responseBody != null && responseBody.trim().startsWith("{")) {
+            if (response.getStatusCode().is2xxSuccessful() && responseBody != null && responseBody.trim().startsWith("{")) {
                 return objectMapper.readValue(responseBody, responseClass);
-            } else if (response.getStatus() == 500 && responseBody != null && responseBody.trim().startsWith("{")) {
-                logger.error("ABA Pay API returned a 500 error: {}", responseBody);
-                throw new RuntimeException("Received a server error from the payment gateway.");
             } else {
                 logger.error("Received an invalid or non-JSON response from the payment gateway.");
                 throw new RuntimeException("Received an invalid response from the payment gateway.");
             }
+        } catch (HttpClientErrorException e) {
+            logger.error("ABA Pay API returned an error: {} {}", e.getStatusCode(), e.getResponseBodyAsString());
+            throw new RuntimeException("Received a server error from the payment gateway.", e);
         } catch (Exception e) {
             logger.error("Error during API request to {}: {}", fullUrl, e.getMessage(), e);
             throw new RuntimeException(e);
         }
     }
 
-    // ? Fixed: Generates hash using ALL fields in proper order
-    private String generateHashString(GenerateQrRequest request) {
-        String data = request.getReq_time() +
-                request.getMerchant_id() +
-                request.getTran_id() +
-                request.getAmount() +
-                safe(request.getItems()) +
-                safe(request.getFirst_name()) +
-                safe(request.getLast_name()) +
-                safe(request.getEmail()) +
-                safe(request.getPhone()) +
-                safe(request.getPurchase_type()) +
-                safe(request.getPayment_option()) +
-                safe(request.getCallback_url()) +
-                safe(request.getReturn_deeplink()) +
-                safe(request.getCurrency()) +
-                safe(request.getCustom_fields()) +
-                safe(request.getReturn_params()) +
-                safe(request.getPayout()) +
-                request.getLifetime() +
-                safe(request.getQr_image_template());
 
-        return createHmacSha512(data);
+    private String generateHashString(GenerateQrRequest request) {
+        StringJoiner data = new StringJoiner("");
+        data.add(request.getReq_time());
+        data.add(request.getMerchant_id());
+        data.add(request.getTran_id());
+        data.add(String.valueOf(request.getAmount()));
+        if (request.getItems() != null) data.add(request.getItems());
+        if (request.getFirst_name() != null) data.add(request.getFirst_name());
+        if (request.getLast_name() != null) data.add(request.getLast_name());
+        if (request.getEmail() != null) data.add(request.getEmail());
+        if (request.getPhone() != null) data.add(request.getPhone());
+        if (request.getPurchase_type() != null) data.add(request.getPurchase_type());
+        if (request.getPayment_option() != null) data.add(request.getPayment_option());
+        if (request.getCallback_url() != null) data.add(request.getCallback_url());
+        if (request.getReturn_deeplink() != null) data.add(request.getReturn_deeplink());
+        if (request.getCurrency() != null) data.add(request.getCurrency());
+        if (request.getCustom_fields() != null) data.add(request.getCustom_fields());
+        if (request.getReturn_params() != null) data.add(request.getReturn_params());
+        if (request.getPayout() != null) data.add(request.getPayout());
+        if (request.getLifetime() > 0) data.add(String.valueOf(request.getLifetime()));
+        if (request.getQr_image_template() != null) data.add(request.getQr_image_template());
+        return createHmacSha512(data.toString());
     }
 
     private String generateHashVerifyTxn(String txnId, String reqTime) {
@@ -238,19 +249,19 @@ public class ABAPayService {
         }
     }
 
-    private String safe(String value) {
-        return value != null ? value : "";
-    }
-
-    private String dateTimeString() {
-        return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-    }
-
     private void sendPaymentStatus(String transactionId, String status) {
         logger.info("Sending payment status update for transactionId='{}': {}", transactionId, status);
         messagingTemplate.convertAndSend("/topic/payment-status", Map.of(
                 "transactionId", transactionId,
                 "status", status
         ));
+    }
+
+    private String encodeCallBackUrl() {
+        return Base64.getEncoder().encodeToString(callbackUrl.getBytes());
+    }
+
+    private String dateTimeString() {
+        return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
     }
 }

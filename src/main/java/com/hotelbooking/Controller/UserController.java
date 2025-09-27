@@ -22,7 +22,7 @@ public class UserController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')") // <-- ADD THIS ANNOTATION
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserRespone>> getAllUsers() {
         return ResponseEntity.ok(userService.findAll());
     }

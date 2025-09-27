@@ -71,6 +71,7 @@ public class AuthController {
             LoginResponse loginResponse = authService.login(authenticationRequest);
             return ResponseEntity.ok(AuthenticationResponse.builder()
                     .token(loginResponse.getToken())
+                    .refreshToken(loginResponse.getRefreshToken())
                     .success(true)
                     .user(loginResponse.getUser())
                     .message("Login successful")
@@ -81,5 +82,13 @@ public class AuthController {
         }
     }
 
-
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthenticationResponse> refreshToken(@RequestBody RefreshTokenRequest request) {
+        try {
+            return ResponseEntity.ok(authService.refreshToken(request.getRefreshToken()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(AuthenticationResponse.builder().success(false).message(e.getMessage()).build());
+        }
+    }
 }

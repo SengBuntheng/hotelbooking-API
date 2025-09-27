@@ -49,7 +49,10 @@ app:
   jwt:
     # Use an environment variable for the secret key. DO NOT hardcode this.
     secret: ${JWT_SECRET:MzQ1MzZmNDU0NjRmNjQ2ZDRlMzU0NzQ1NTUzNzcxNDU1NTQyNTQ0YzQxNTE0NDQ0NTM0NDU0NDU0MjQ1NDU1Mw==}
-    expiration-ms: 86400000 # 24 hours
+    # Access token expiration: 15 minutes for better security
+    expiration-ms: 900000
+    # Refresh token expiration: 7 days
+    refresh-token-expiration-ms: 604800000
   otp:
     expiration:
       minutes: 5
@@ -62,10 +65,12 @@ app:
 # Common ABA Pay configuration
 aba:
   public:
-    key: 67cdeaba4eadef4dff8a5bd27a0e8888d4d2a2aa
-  merchant: ec461800
+    key: 50a274cc8bde00d02d01fe75414b53a5a3fd48df
+  merchant: ec461749
   api: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/
-  callback: https://api.bakongcity.city/v1/aba/callback/
+  callback: http://localhost:8080/callback
+
+
 
 
 ---

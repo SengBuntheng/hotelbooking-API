@@ -23,6 +23,7 @@ import java.io.IOException;
 
 @Slf4j
 @Component
+
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
 
@@ -80,7 +81,7 @@ public class JwtFilter extends OncePerRequestFilter {
             log.error("JWT Token processing error: {}", e.getMessage());
             sendUnauthorizedError(response, "Invalid JWT token");
         } catch (Exception e) {
-            log.error("An unexpected error occurred during apy JWT processing: {}", e.getMessage());
+            log.error("An unexpected error occurred during JWT processing: {}", e.getMessage());
             sendUnauthorizedError(response, "Authentication error");
         }
     }

@@ -20,12 +20,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .setAllowedOriginPatterns("*")
                 .withSockJS();  // Fallback for older browsers
     }
-    @Override
-    public void configureWebSocketTransport(WebSocketTransportRegistration registry) {
-        registry.setMessageSizeLimit(64 * 1024);
-        registry.setSendTimeLimit(20 * 1000);
-        registry.setSendBufferSizeLimit(512 * 1024);
-    }
 
 
 
