@@ -3,6 +3,7 @@ package com.hotelbooking.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,7 +31,9 @@ public class Hotel extends BaseEntity {
     @Lob
     private String description;
 
-    private String rating;
+    @Column(name = "rating", precision = 3, scale = 2)  // allows up to 9.99
+    private BigDecimal rating;
+
 
     @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Staff> staff = new ArrayList<>();

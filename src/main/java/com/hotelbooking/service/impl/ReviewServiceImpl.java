@@ -79,7 +79,10 @@ public class ReviewServiceImpl implements ReviewService {
         Review existingReview = reviewRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Review not found with id: " + id));
 
-        existingReview.setRating(reviewDto.getRating());
+        if (reviewDto.getRating() != null) {
+            existingReview.setRating(String.valueOf(Double.valueOf(reviewDto.getRating())));
+        }
+
         existingReview.setComment(reviewDto.getComment());
 
         Review updatedReview = reviewRepository.save(existingReview);

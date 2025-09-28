@@ -104,7 +104,7 @@ spring:
 
   datasource:
     # Corrected URL includes the DB_PORT
-    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?ssl-mode=REQUIRED
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?sslMode=REQUIRED&zeroDateTimeBehavior=CONVERT_TO_NULL
     username: ${DB_USER}
     password: ${DB_PASSWORD}
 

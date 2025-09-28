@@ -111,7 +111,7 @@ public class HotelImageServiceImpl implements HotelImageService {
             HotelDto hotelDto = HotelDto.builder()
                     .id(hotelImage.getHotel().getId())
                     .name(hotelImage.getHotel().getName())
-                    .rating(hotelImage.getHotel().getRating())  // <-- fixed here
+                    .rating(hotelImage.getHotel().getRating())
                     .build();
             dto.setHotel(hotelDto);
         }

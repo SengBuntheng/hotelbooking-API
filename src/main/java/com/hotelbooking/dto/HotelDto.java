@@ -34,9 +34,10 @@ public class HotelDto {
     private String city;
     private String country;
 
-    @DecimalMin(value = "0.0", message = "Rating must be at least 0")
-    @DecimalMax(value = "5.0", message = "Rating must not exceed 5")
-    private String rating;
+
+    @DecimalMin("0.0")
+    @DecimalMax("5.0")
+    private BigDecimal rating;
 
     // Nested objects
     private List<RoomTypeDto> roomTypes;

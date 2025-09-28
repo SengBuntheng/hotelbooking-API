@@ -1,3 +1,4 @@
+
 package com.hotelbooking.service.impl;
 
 
@@ -10,6 +11,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -51,7 +53,7 @@ public class HotelServiceImpl implements HotelService {
 
         return hotelDto;
     }
-        @Override
+    @Override
     public HotelDto createHotel(HotelDto hotelDto) {
         Hotel hotel = modelMapper.map(hotelDto, Hotel.class);
         hotel.setId(null);
@@ -94,7 +96,7 @@ public class HotelServiceImpl implements HotelService {
             existingHotel.setDescription(hotelDto.getDescription());
         }
         if (hotelDto.getRating() != null) {
-            existingHotel.setRating(hotelDto.getRating());
+            existingHotel.setRating(BigDecimal.valueOf(Double.valueOf(String.valueOf(hotelDto.getRating()))));
         }
 
         Hotel updatedHotel = hotelRepository.save(existingHotel);

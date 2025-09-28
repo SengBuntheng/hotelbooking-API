@@ -35,9 +35,8 @@ public class SecurityConfig {
     private final JwtFilter jwtFilter;
     private  final UserDetailsService userDetailsService;
 
-    // These endpoints are publicly accessible without any authentication
     private static final String[] PUBLIC_ENDPOINTS = {
-            "/api/v1/auth/**", // Allows /register, /verify, and /login
+            "/api/v1/auth/**",
             "/v1/aba/callback",
             "/ws-payment/**",
             "/swagger-ui.html",
