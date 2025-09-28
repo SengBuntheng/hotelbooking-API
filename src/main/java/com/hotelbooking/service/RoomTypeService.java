@@ -1,10 +1,8 @@
 package com.hotelbooking.service;
 
 import com.hotelbooking.dto.RoomTypeDto;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
-@Service
+
 public interface RoomTypeService {
     RoomTypeDto createRoomType(RoomTypeDto roomTypeDto);
     RoomTypeDto getRoomTypeById(Long id);

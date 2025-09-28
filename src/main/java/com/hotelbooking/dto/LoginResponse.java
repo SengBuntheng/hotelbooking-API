@@ -25,5 +25,5 @@ public class LoginResponse {
     private String refreshToken;
     private Timestamp tokenExp;
     private String phone;
-    private UserRespone user;
+    private UserResponse user;
 }

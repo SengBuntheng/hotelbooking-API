@@ -5,11 +5,12 @@ import com.hotelbooking.service.HotelService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import javax.validation.Valid;
 import java.util.List;
+
 @CrossOrigin(origins = "*")
 @RestController
-@RequestMapping("/v1/hotels")
+@RequestMapping("/api/v1/hotels")
 public class HotelController {
 
     private final HotelService hotelService;
@@ -19,28 +20,48 @@ public class HotelController {
     }
 
     @PostMapping
-    public ResponseEntity<HotelDto> createHotel(@RequestBody HotelDto hotelDto) {
-        return new ResponseEntity<>(hotelService.createHotel(hotelDto), HttpStatus.CREATED);
+    public ResponseEntity<HotelDto> createHotel(@Valid @RequestBody HotelDto hotelDto) {
+        try {
+            HotelDto created = hotelService.createHotel(hotelDto);
+            return new ResponseEntity<>(created, HttpStatus.CREATED);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+        }
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<HotelDto> getHotelById(@PathVariable Long id) {
-        return ResponseEntity.ok(hotelService.getHotelById(id));
+        try {
+            HotelDto hotel = hotelService.getHotelById(id);
+            return ResponseEntity.ok(hotel);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        }
     }
 
     @GetMapping
     public ResponseEntity<List<HotelDto>> getAllHotels() {
-        return ResponseEntity.ok(hotelService.getAllHotels());
+        List<HotelDto> hotels = hotelService.getAllHotels();
+        return ResponseEntity.ok(hotels);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<HotelDto> updateHotel(@PathVariable Long id, @RequestBody HotelDto hotelDto) {
-        return ResponseEntity.ok(hotelService.updateHotel(id, hotelDto));
+    public ResponseEntity<HotelDto> updateHotel(@PathVariable Long id, @Valid @RequestBody HotelDto hotelDto) {
+        try {
+            HotelDto updated = hotelService.updateHotel(id, hotelDto);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        }
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteHotel(@PathVariable Long id) {
-        hotelService.deleteHotel(id);
-        return ResponseEntity.noContent().build();
+        try {
+            hotelService.deleteHotel(id);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
     }
 }

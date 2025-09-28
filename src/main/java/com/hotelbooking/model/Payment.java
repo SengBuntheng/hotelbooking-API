@@ -1,6 +1,6 @@
 package com.hotelbooking.model;
 
-import com.hotelbooking.Enum.PaymentStatus;
+import com.hotelbooking.Enum.PaymentStatusCode;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -29,7 +29,7 @@ public class Payment {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private PaymentStatus paymentStatus;
+    private PaymentStatusCode paymentStatus;
 
     @Column(nullable = false, unique = true)
     private String transactionId;

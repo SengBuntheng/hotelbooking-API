@@ -17,7 +17,7 @@ import java.util.List;
 public class Room extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id;
     @Column(name = "room_number", nullable = false)
     private String roomNumber;
 

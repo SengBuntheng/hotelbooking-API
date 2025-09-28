@@ -1,13 +1,14 @@
 package com.hotelbooking.service.handler;
 
 import com.hotelbooking.Constant.Constant;
+import com.hotelbooking.Enum.PaymentStatusCode;
 import com.hotelbooking.Repository.PaymentRepository;
 import com.hotelbooking.dto.PaymentRequest;
 import com.hotelbooking.model.Payment;
 import com.hotelbooking.service.ABAPayService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import com.hotelbooking.Enum.PaymentStatus;
+
 
 
 import java.time.LocalDateTime;
@@ -75,7 +76,7 @@ public class PaymentHandlerService {
         Payment payment = Payment.builder()
                 .amount(request.getAmount())
                 .paymentMethod(request.getPaymentMethod())
-                .paymentStatus(PaymentStatus.PENDING)
+                .paymentStatus(PaymentStatusCode.PENDING)
                 .transactionId(request.getTransactionId())
                 .qrCodeData(qrData)
                 .currency("USD")

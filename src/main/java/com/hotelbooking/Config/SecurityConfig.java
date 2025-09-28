@@ -20,6 +20,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.Arrays;
 import java.util.List;
@@ -31,18 +33,26 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
-    private final UserDetailsService userDetailsService;
+    private  final UserDetailsService userDetailsService;
 
     // These endpoints are publicly accessible without any authentication
     private static final String[] PUBLIC_ENDPOINTS = {
-            "/v1/auth/**", // Allows /register, /verify, and /login
+            "/api/v1/auth/**", // Allows /register, /verify, and /login
             "/v1/aba/callback",
             "/ws-payment/**",
-            "/swagger-ui/**",
+            "/swagger-ui.html",
             "/v3/api-docs/**",
             "/actuator/health",
             "/v1/bookings/create",
-            "/v1/aba/**"
+            "/swagger-ui/**",
+            "/v1/aba/**",
+            "/api/v1/hotel-booking/**",
+            "/api/v1/hotel-images/**",
+            "/api/v1/**",
+            "/api/v1/hotel-booking/rooms/**",
+            "/api/v1/hotel-booking/hotels/**",
+            "/api/v1/hotel-booking/search/**"
+
     };
 
     @Bean
@@ -52,7 +62,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                        .anyRequest().authenticated() // All other endpoints require a valid JWT
+                        .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -62,6 +72,26 @@ public class SecurityConfig {
 
         return http.build();
     }
+
+
+//    @Bean
+//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+//        http
+//                .csrf(AbstractHttpConfigurer::disable)
+//                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+//                .authorizeHttpRequests(auth -> auth
+//                        .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+//                        .anyRequest().authenticated()
+//                )
+//                .sessionManagement(session -> session
+//                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+//                )
+//                .authenticationProvider(authenticationProvider())
+//                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+//
+//        return http.build();
+//    }
+
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
@@ -86,7 +116,9 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
                 "http://127.0.0.1:5501",
-                "http://localhost:8080"
+                "http://localhost:8080",
+                "http://localhost:5500",
+                "http://localhost:3000"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList(
@@ -97,4 +129,15 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
+    @Bean
+    public WebMvcConfigurer corsConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+                registry.addMapping("/v3/api-docs/**")
+                        .allowedOrigins("*");
+            }
+        };
+    }
+
 }

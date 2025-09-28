@@ -17,7 +17,7 @@ public class Hotel extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id;
     @Column(nullable = false)
     private String name;
 
@@ -30,7 +30,7 @@ public class Hotel extends BaseEntity {
     @Lob
     private String description;
 
-    private Double rating;
+    private String rating;
 
     @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Staff> staff = new ArrayList<>();

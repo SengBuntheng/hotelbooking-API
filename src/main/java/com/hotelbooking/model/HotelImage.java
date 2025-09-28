@@ -22,6 +22,8 @@ public class HotelImage extends BaseEntity {
     @Column(name = "image_type")
     private String imageType;
 
+    private String altText;
+    private Boolean isPrimary;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hotel_id", nullable = false)

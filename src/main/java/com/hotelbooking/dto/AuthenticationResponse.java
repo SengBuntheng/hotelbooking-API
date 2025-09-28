@@ -15,5 +15,5 @@ public class AuthenticationResponse {
     private String message;
     private String token;
     private String refreshToken;
-    private UserRespone user;
+    private UserResponse user;
 }

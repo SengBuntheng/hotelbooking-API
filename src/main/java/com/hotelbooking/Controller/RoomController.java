@@ -5,11 +5,12 @@ import com.hotelbooking.service.RoomService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import javax.validation.Valid;
 import java.util.List;
+
 @CrossOrigin(origins = "*")
 @RestController
-@RequestMapping("/v1/rooms")
+@RequestMapping("/api/v1/rooms")
 public class RoomController {
 
     private final RoomService roomService;
@@ -19,28 +20,48 @@ public class RoomController {
     }
 
     @PostMapping
-    public ResponseEntity<RoomDto> createRoom(@RequestBody RoomDto roomDto) {
-        return new ResponseEntity<>(roomService.createRoom(roomDto), HttpStatus.CREATED);
+    public ResponseEntity<RoomDto> createRoom(@Valid @RequestBody RoomDto roomDto) {
+        try {
+            RoomDto created = roomService.createRoom(roomDto);
+            return new ResponseEntity<>(created, HttpStatus.CREATED);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+        }
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<RoomDto> getRoomById(@PathVariable Long id) {
-        return ResponseEntity.ok(roomService.getRoomById(id));
+        try {
+            RoomDto room = roomService.getRoomById(id);
+            return ResponseEntity.ok(room);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        }
     }
 
     @GetMapping
     public ResponseEntity<List<RoomDto>> getAllRooms() {
-        return ResponseEntity.ok(roomService.getAllRooms());
+        List<RoomDto> rooms = roomService.getAllRooms();
+        return ResponseEntity.ok(rooms);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<RoomDto> updateRoom(@PathVariable Long id, @RequestBody RoomDto roomDto) {
-        return ResponseEntity.ok(roomService.updateRoom(id, roomDto));
+    public ResponseEntity<RoomDto> updateRoom(@PathVariable Long id, @Valid @RequestBody RoomDto roomDto) {
+        try {
+            RoomDto updated = roomService.updateRoom(id, roomDto);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        }
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRoom(@PathVariable Long id) {
-        roomService.deleteRoom(id);
-        return ResponseEntity.noContent().build();
+        try {
+            roomService.deleteRoom(id);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
     }
 }

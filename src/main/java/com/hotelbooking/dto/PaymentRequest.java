@@ -1,9 +1,7 @@
 package com.hotelbooking.dto;
 
-import com.hotelbooking.Enum.PaymentMethod;
-import com.hotelbooking.Enum.PaymentStatus;
+
 import com.hotelbooking.model.Booking;
-import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 

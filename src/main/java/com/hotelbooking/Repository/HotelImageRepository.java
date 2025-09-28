@@ -1,10 +1,16 @@
 package com.hotelbooking.Repository;
 
+import com.hotelbooking.dto.HotelImageDto;
 import com.hotelbooking.model.HotelImage;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import java.util.List;
 
-
-@Repository
 public interface HotelImageRepository extends JpaRepository<HotelImage, Long> {
+
+    List<HotelImage> findByHotelId(Long hotelId);
+
+    List<HotelImage> findByHotelIdAndIsPrimary(Long hotelId, Boolean isPrimary);
+
+    List<HotelImage> findByImageType(String imageType);
+    List <HotelImageDto> getHotelImagesByHotelId(Long hotelId);
 }
