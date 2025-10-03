@@ -41,11 +41,10 @@ public class BookingService {
         booking.setUser(user);
         booking.setRoom(room);
 
-
         return bookingRepository.save(booking);
     }
-   public List<Booking> getAllBookings() {
+
+    public List<Booking> getAllBookings() {
         return bookingRepository.findAll();
     }
-
 }

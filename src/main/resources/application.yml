@@ -65,11 +65,17 @@ app:
 # Common ABA Pay configuration
 aba:
   public:
-    key: 50a274cc8bde00d02d01fe75414b53a5a3fd48df
-  merchant: ec461749
+    key: 308f1c5f450ff6d971bf8a805b4d18a6ef142464
+  merchant: ec000262
   api: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/
   callback: http://localhost:8080/callback
-
+  timeout:
+    connect: 30000
+    read: 30000
+    retry:
+      max:
+        attempts: 3
+      delay: 2000
 
 
 
@@ -96,14 +102,12 @@ spring:
             enable: true
 
 ---
-# Production Profile
 spring:
   config:
     activate:
       on-profile: prod
 
   datasource:
-    # Corrected URL includes the DB_PORT
     url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?sslMode=REQUIRED&zeroDateTimeBehavior=CONVERT_TO_NULL
     username: ${DB_USER}
     password: ${DB_PASSWORD}
@@ -130,9 +134,9 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
 
-aba:
-  public:
-    key: 67cdeaba4eadef4dff8a5bd27a0e8888d4d2a2aa
-  merchant: ec461800
-  api: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/
-  callback: https://api.bakongcity.city/v1/aba/callback/
+#aba:
+#  public:
+#    key: 67cdeaba4eadef4dff8a5bd27a0e8888d4d2a2aa
+#  merchant: ec461800
+#  api: https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/
+#  callback: https://api.bakongcity.city/v1/aba/callback/

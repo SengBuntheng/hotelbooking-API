@@ -191,8 +191,7 @@ public class UserHandlerService {
     }
 
     public boolean canUserBeDeleted(User user) {
-        // Add business logic here - e.g., check if user has active bookings
-        // For now, allow deletion of inactive users or users without critical data
+
         return user != null && !user.getActive();
     }
 }

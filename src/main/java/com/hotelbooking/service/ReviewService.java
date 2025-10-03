@@ -8,6 +8,8 @@ public interface ReviewService {
     ReviewDto getReviewById(Long id);
     List<ReviewDto> getAllReviews();
     List<ReviewDto> getReviewsByHotelId(Long hotelId);
+    List<ReviewDto> getReviewsByUserId(Long userId);
     ReviewDto updateReview(Long id, ReviewDto reviewDto);
     void deleteReview(Long id);
+    Double getAverageRatingForHotel(Long hotelId);
 }

@@ -7,6 +7,7 @@ public interface RoomTypeService {
     RoomTypeDto createRoomType(RoomTypeDto roomTypeDto);
     RoomTypeDto getRoomTypeById(Long id);
     List<RoomTypeDto> getAllRoomTypes();
+    List<RoomTypeDto> getRoomTypesByHotelId(Long hotelId);
     RoomTypeDto updateRoomType(Long id, RoomTypeDto roomTypeDto);
     void deleteRoomType(Long id);
 }

@@ -13,18 +13,18 @@ import org.springframework.http.*;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.net.SocketTimeoutException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
-
-import static com.hotelbooking.Enum.PaymentStatusCode.PENDING;
 
 @Service
 public class ABAPayService {
@@ -43,6 +43,18 @@ public class ABAPayService {
     @Value("${aba.callback}")
     private String callbackUrl;
 
+    @Value("${aba.timeout.connect:30000}")
+    private int connectTimeout;
+
+    @Value("${aba.timeout.read:30000}")
+    private int readTimeout;
+
+    @Value("${aba.retry.max.attempts:3}")
+    private int maxRetryAttempts;
+
+    @Value("${aba.retry.delay:2000}")
+    private int retryDelayMs;
+
     private final SimpMessagingTemplate messagingTemplate;
     private final BookingRepository bookingRepository;
     private final RestTemplate restTemplate;
@@ -55,6 +67,20 @@ public class ABAPayService {
         this.bookingRepository = bookingRepository;
         this.restTemplate = restTemplate;
         this.objectMapper = new ObjectMapper();
+
+        // Configure RestTemplate with timeouts if not already configured
+        configureRestTemplateTimeouts();
+    }
+
+    private void configureRestTemplateTimeouts() {
+        try {
+            var factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+            factory.setConnectTimeout(connectTimeout);
+            factory.setReadTimeout(readTimeout);
+            ((org.springframework.web.client.RestTemplate) restTemplate).setRequestFactory(factory);
+        } catch (Exception e) {
+            logger.warn("Could not configure RestTemplate timeouts: {}", e.getMessage());
+        }
     }
 
     public String getQrImageBase64(Booking booking) {
@@ -62,7 +88,7 @@ public class ABAPayService {
             throw new IllegalArgumentException("Booking cannot be null");
         }
 
-        GenerateQrResponse qrResponse = proceedQrRequest(booking);
+        GenerateQrResponse qrResponse = proceedQrRequestWithRetry(booking);
         if (qrResponse == null || !"0".equals(qrResponse.getStatus().getCode())) {
             String errorMessage = qrResponse != null ? qrResponse.getStatus().getMessage() : "No response from ABA Pay";
             logger.error("Failed to generate QR code for booking {}: {}", booking.getId(), errorMessage);
@@ -78,6 +104,43 @@ public class ABAPayService {
         return qrImage.split(",")[1];
     }
 
+    private GenerateQrResponse proceedQrRequestWithRetry(Booking booking) {
+        int attempt = 0;
+        Exception lastException = null;
+
+        while (attempt < maxRetryAttempts) {
+            try {
+                attempt++;
+                logger.info("Attempt {} to generate QR for booking {}", attempt, booking.getId());
+
+                GenerateQrRequest requestBody = buildQrRequest(booking);
+                requestBody.setHash(generateHashString(requestBody));
+
+                return sendApiRequest("generate-qr", requestBody, GenerateQrResponse.class);
+
+            } catch (ResourceAccessException e) {
+                lastException = e;
+                logger.warn("Network error on attempt {} for booking {}: {}", attempt, booking.getId(), e.getMessage());
+
+                if (attempt < maxRetryAttempts) {
+                    try {
+                        Thread.sleep(retryDelayMs * attempt); // Exponential backoff
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("QR generation interrupted", ie);
+                    }
+                }
+            } catch (Exception e) {
+                // For non-network errors, don't retry
+                logger.error("Non-retryable error generating QR for booking {}: {}", booking.getId(), e.getMessage());
+                throw new RuntimeException("Failed to process QR request: " + e.getMessage(), e);
+            }
+        }
+
+        logger.error("Failed to generate QR after {} attempts for booking {}", maxRetryAttempts, booking.getId());
+        throw new RuntimeException("QR generation failed after " + maxRetryAttempts + " attempts due to network issues", lastException);
+    }
+
     public ResponseEntity<byte[]> qrImage(Booking booking) {
         try {
             if (booking == null) {
@@ -85,7 +148,7 @@ public class ABAPayService {
                 return ResponseEntity.badRequest().build();
             }
 
-            GenerateQrResponse exGenerateQrResponse = proceedQrRequest(booking);
+            GenerateQrResponse exGenerateQrResponse = proceedQrRequestWithRetry(booking);
             if (exGenerateQrResponse == null || !exGenerateQrResponse.getStatus().getCode().equals("0")) {
                 logger.error("Failed to generate QR for booking {}: {}",
                         booking.getId(),
@@ -116,7 +179,7 @@ public class ABAPayService {
         }
 
         try {
-            CheckTxnResponse checkTxnResponse = checkTransaction(request.getTran_id());
+            CheckTxnResponse checkTxnResponse = checkTransactionWithRetry(request.getTran_id());
 
             if (checkTxnResponse == null || !"00".equals(checkTxnResponse.getStatus().getCode())) {
                 String message = checkTxnResponse != null ? checkTxnResponse.getStatus().getMessage() : "No response";
@@ -144,6 +207,47 @@ public class ABAPayService {
         }
     }
 
+    private CheckTxnResponse checkTransactionWithRetry(String txnId) {
+        int attempt = 0;
+        Exception lastException = null;
+
+        while (attempt < maxRetryAttempts) {
+            try {
+                attempt++;
+                logger.info("Attempt {} to check transaction {}", attempt, txnId);
+
+                CheckTxnRequest request = new CheckTxnRequest();
+                String reqTime = dateTimeString();
+                request.setReq_time(reqTime);
+                request.setMerchant_id(merchantId);
+                request.setTran_id(txnId);
+                request.setHash(generateHashVerifyTxn(txnId, reqTime));
+
+                return sendApiRequest("check-transaction-2", request, CheckTxnResponse.class);
+
+            } catch (ResourceAccessException e) {
+                lastException = e;
+                logger.warn("Network error on attempt {} for transaction {}: {}", attempt, txnId, e.getMessage());
+
+                if (attempt < maxRetryAttempts) {
+                    try {
+                        Thread.sleep(retryDelayMs * attempt);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("Transaction check interrupted", ie);
+                    }
+                }
+            } catch (Exception e) {
+                // For non-network errors, don't retry
+                logger.error("Non-retryable error checking transaction {}: {}", txnId, e.getMessage());
+                throw e;
+            }
+        }
+
+        logger.error("Failed to check transaction after {} attempts for {}", maxRetryAttempts, txnId);
+        throw new RuntimeException("Transaction check failed after " + maxRetryAttempts + " attempts", lastException);
+    }
+
     private void updateBookingStatus(Booking booking, int paymentStatusCode) {
         PaymentStatusCode status = PaymentStatusCode.fromCode(paymentStatusCode);
 
@@ -156,18 +260,15 @@ public class ABAPayService {
             case PENDING:
                 booking.setBookingStatus(BookingStatus.IN_PROGRESS);
                 sendPaymentStatus(String.valueOf(booking.getId()), "PENDING");
-
                 logger.info("Booking {} is pending", booking.getId());
                 break;
             default:
                 booking.setBookingStatus(BookingStatus.CANCELLED);
                 sendPaymentStatus(String.valueOf(booking.getId()), "FAIL");
-
                 logger.warn("Booking {} failed with status code {}", booking.getId(), paymentStatusCode);
                 break;
         }
     }
-
 
     private GenerateQrRequest buildQrRequest(Booking booking) {
         GenerateQrRequest requestBody = new GenerateQrRequest();
@@ -200,34 +301,13 @@ public class ABAPayService {
         return requestBody;
     }
 
-    private GenerateQrResponse proceedQrRequest(Booking booking) {
-        try {
-            GenerateQrRequest requestBody = buildQrRequest(booking);
-            requestBody.setHash(generateHashString(requestBody));
-
-            return sendApiRequest("generate-qr", requestBody, GenerateQrResponse.class);
-        } catch (Exception e) {
-            logger.error("Error processing QR request for booking {}: {}", booking.getId(), e.getMessage(), e);
-            throw new RuntimeException("Failed to process QR request", e);
-        }
-    }
-
-    private CheckTxnResponse checkTransaction(String txnId) {
-        CheckTxnRequest request = new CheckTxnRequest();
-        String reqTime = dateTimeString();
-        request.setReq_time(reqTime);
-        request.setMerchant_id(merchantId);
-        request.setTran_id(txnId);
-        request.setHash(generateHashVerifyTxn(txnId, reqTime));
-
-        return sendApiRequest("check-transaction-2", request, CheckTxnResponse.class);
-    }
-
     private <T> T sendApiRequest(String endpoint, Object request, Class<T> responseClass) {
         String fullUrl = baseUrl + endpoint;
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("User-Agent", "HotelBooking-App/1.0");
+
             String jsonPayload = objectMapper.writeValueAsString(request);
             HttpEntity<String> entity = new HttpEntity<>(jsonPayload, headers);
 
@@ -237,22 +317,28 @@ public class ABAPayService {
             ResponseEntity<String> response = restTemplate.postForEntity(fullUrl, entity, String.class);
 
             String responseBody = response.getBody();
-            logger.info("Received response from ABA PAY API Status: {}, Body: {}", response.getStatusCode(), responseBody);
+            logger.info("Received response from ABA PAY API Status: {}", response.getStatusCode());
 
             if (response.getStatusCode().is2xxSuccessful() && responseBody != null && responseBody.trim().startsWith("{")) {
                 return objectMapper.readValue(responseBody, responseClass);
             } else {
-                logger.error("Received an invalid or non-JSON response from the payment gateway.");
+                logger.error("Received an invalid or non-JSON response from the payment gateway: {}", responseBody);
                 throw new RuntimeException("Received an invalid response from the payment gateway.");
             }
         } catch (HttpClientErrorException e) {
-            logger.error("ABA Pay API returned an error: {} {}", e.getStatusCode(), e.getResponseBodyAsString());
-            throw new RuntimeException("Received a server error from the payment gateway.", e);
+            logger.error("ABA Pay API returned client error: {} {}", e.getStatusCode(), e.getResponseBodyAsString());
+            throw new RuntimeException("Payment gateway client error: " + e.getStatusCode(), e);
+        } catch (ResourceAccessException e) {
+            logger.error("Network error connecting to ABA Pay API: {}", e.getMessage());
+            throw new ResourceAccessException("Network connection error: " + e.getMessage());
         } catch (Exception e) {
-            logger.error("Error during API request to {}: {}", fullUrl, e.getMessage(), e);
-            throw new RuntimeException("API request failed", e);
+            logger.error("Error during API request to {}: {}", fullUrl, e.getMessage());
+            throw new RuntimeException("API request failed: " + e.getMessage(), e);
         }
     }
+
+    // ... (keep the existing helper methods: generateHashString, generateHashVerifyTxn,
+    // createHmacSha512, sendPaymentStatus, encodeCallBackUrl, dateTimeString)
 
     private String generateHashString(GenerateQrRequest request) {
         StringJoiner data = new StringJoiner("");

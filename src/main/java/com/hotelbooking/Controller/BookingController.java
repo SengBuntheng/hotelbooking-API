@@ -24,20 +24,28 @@ public class BookingController {
 
     @PostMapping("/create")
     public ResponseEntity<BookingCreationResponse> createBookingAndGetQrCode(@RequestBody Booking booking) {
-        booking.setBookingStatus(com.hotelbooking.Enum.BookingStatus.IN_PROGRESS);
-        Booking savedBooking = bookingService.createBooking(booking);
+        try {
+            booking.setBookingStatus(com.hotelbooking.Enum.BookingStatus.IN_PROGRESS);
+            Booking savedBooking = bookingService.createBooking(booking);
 
-        String qrCodeBase64 = abaPayService.getQrImageBase64(savedBooking);
+            String qrCodeBase64 = abaPayService.getQrImageBase64(savedBooking);
 
-        BookingCreationResponse response = new BookingCreationResponse(savedBooking.getId(), qrCodeBase64);
+            BookingCreationResponse response = new BookingCreationResponse(savedBooking.getId(), qrCodeBase64);
 
-        // 4. Return the response
-        return ResponseEntity.ok(response);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            // Log the exception here
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @GetMapping
     public ResponseEntity<List<Booking>> getAllBookings() {
-        List<Booking> bookings = bookingService.getAllBookings();
-        return ResponseEntity.ok(bookings);
+        try {
+            List<Booking> bookings = bookingService.getAllBookings();
+            return ResponseEntity.ok(bookings);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }

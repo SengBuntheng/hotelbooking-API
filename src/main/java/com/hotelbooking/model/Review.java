@@ -3,6 +3,7 @@ package com.hotelbooking.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Getter
@@ -17,9 +18,9 @@ public class Review extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
-    @Column(nullable = false)
-    private String rating;
 
+    @Column(nullable = false, precision = 3, scale = 2) // e.g., 4.50
+    private BigDecimal rating;
     @Lob
     private String comment;
 

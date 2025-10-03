@@ -71,7 +71,7 @@ public class User extends BaseEntity {
     private LocalDateTime lastLogin;
 
     @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
-    private Boolean active = false;  // Changed from primitive to Boolean
+    private Boolean active = false;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Booking> bookings;

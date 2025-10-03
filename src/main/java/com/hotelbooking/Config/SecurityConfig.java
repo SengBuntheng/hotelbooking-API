@@ -50,7 +50,9 @@ public class SecurityConfig {
             "/api/v1/**",
             "/api/v1/hotel-booking/rooms/**",
             "/api/v1/hotel-booking/hotels/**",
-            "/api/v1/hotel-booking/search/**"
+            "/api/v1/hotel-booking/search/**",
+            "/v1/auth/**",
+            "/api/v1/auth/**"
 
     };
 
